@@ -2,18 +2,13 @@ services:
   - type: web
     name: cpss-app
     runtime: node
+    rootDir: cpssapp
     buildCommand: npm install
     startCommand: node server.js
     envVars:
       - key: ADMIN_PASSWORD
-        generateValue: false
         value: changez-moi-admin
       - key: VIEWER_PASSWORD
-        generateValue: false
         value: changez-moi-bureau
       - key: SESSION_SECRET
         generateValue: true
-    disk:
-      name: cpss-data
-      mountPath: /opt/render/project/src/data
-      sizeGB: 1
