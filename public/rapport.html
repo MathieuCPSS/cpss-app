@@ -381,6 +381,58 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 <script>
+// ====== Fonctions QR Scanner ======
+var qrScannerPieces = null;
+
+function ouvrirScannerPieces() {
+  document.getElementById('qrScanModal').style.display = 'flex';
+  qrScannerPieces = new Html5Qrcode("qrScanReader");
+  Html5Qrcode.getCameras().then(function(devices) {
+    if (!devices || !devices.length) {
+      document.getElementById('qrScanStatus').textContent = 'Aucune caméra détectée.';
+      return;
+    }
+    var cam = devices.find(function(d) { return d.label && d.label.toLowerCase().includes('back'); }) || devices[0];
+    qrScannerPieces.start(
+      cam.id,
+      { fps: 10, qrbox: 250 },
+      function(qrCode) {
+        if (qrCode.startsWith('CPSS_PIECES:')) {
+          var payload = qrCode.replace('CPSS_PIECES:', '');
+          var lignes = payload.split(';').map(function(item) {
+            var parts = item.split('|');
+            var nom = decodeURIComponent(parts[0] || '');
+            var qty = parts[2] || '1';
+            return nom + ' × ' + qty;
+          });
+          var textarea = document.getElementById('piecesChanged');
+          var existing = textarea.value.trim();
+          var newText = lignes.join('\n');
+          textarea.value = existing ? existing + '\n' + newText : newText;
+          document.getElementById('qrScanStatus').textContent = '✅ ' + lignes.length + ' article(s) importé(s) !';
+          fermerScannerPieces();
+        } else {
+          document.getElementById('qrScanStatus').textContent = '⚠️ QR code non reconnu.';
+        }
+      },
+      function() {}
+    ).catch(function(err) {
+      document.getElementById('qrScanStatus').textContent = 'Erreur caméra : ' + err;
+    });
+  }).catch(function(err) {
+    document.getElementById('qrScanStatus').textContent = 'Erreur : ' + err;
+  });
+}
+
+function fermerScannerPieces() {
+  document.getElementById('qrScanModal').style.display = 'none';
+  if (qrScannerPieces) {
+    qrScannerPieces.stop().catch(function(){});
+    qrScannerPieces = null;
+  }
+}
+// ====== Fin Fonctions QR Scanner ======
+
 function exporterPDF() {
 const elementsNoPrint = document.querySelectorAll('.no-print');
 elementsNoPrint.forEach(el => el.style.display = 'none');
@@ -765,15 +817,20 @@ if (trajet) {
 
     // Initialisation : vérifier auth + charger la liste
     window.addEventListener('load', () => {
-      CPSS.requireAuth().then(role => {
-        if (!role) return;
-        if (role === 'viewer') {
-          // Lecture seule : masquer les boutons de modification
-          document.querySelectorAll('.no-print').forEach(el => el.style.display = 'none');
-          document.querySelector('.no-print')?.style && (document.querySelector('.no-print').style.display = 'block');
-        }
+      if (typeof CPSS !== 'undefined') {
+        CPSS.requireAuth().then(role => {
+          if (!role) return;
+          if (role === 'viewer') {
+            // Lecture seule : masquer les boutons de modification
+            document.querySelectorAll('.no-print').forEach(el => el.style.display = 'none');
+            document.querySelector('.no-print')?.style && (document.querySelector('.no-print').style.display = 'block');
+          }
+          rafraichirListe();
+        });
+      } else {
+        // Fallback si /api.js ne charge pas
         rafraichirListe();
-      });
+      }
     });
   </script>
 
@@ -1100,56 +1157,5 @@ function modifierClient() {
   </div>
 </div>
 
-<script>
-var qrScannerPieces = null;
-
-function ouvrirScannerPieces() {
-  document.getElementById('qrScanModal').style.display = 'flex';
-  qrScannerPieces = new Html5Qrcode("qrScanReader");
-  Html5Qrcode.getCameras().then(function(devices) {
-    if (!devices || !devices.length) {
-      document.getElementById('qrScanStatus').textContent = 'Aucune caméra détectée.';
-      return;
-    }
-    var cam = devices.find(function(d) { return d.label && d.label.toLowerCase().includes('back'); }) || devices[0];
-    qrScannerPieces.start(
-      cam.id,
-      { fps: 10, qrbox: 250 },
-      function(qrCode) {
-        if (qrCode.startsWith('CPSS_PIECES:')) {
-          var payload = qrCode.replace('CPSS_PIECES:', '');
-          var lignes = payload.split(';').map(function(item) {
-            var parts = item.split('|');
-            var nom = decodeURIComponent(parts[0] || '');
-            var qty = parts[2] || '1';
-            return nom + ' × ' + qty;
-          });
-          var textarea = document.getElementById('piecesChanged');
-          var existing = textarea.value.trim();
-          var newText = lignes.join('\n');
-          textarea.value = existing ? existing + '\n' + newText : newText;
-          document.getElementById('qrScanStatus').textContent = '✅ ' + lignes.length + ' article(s) importé(s) !';
-          fermerScannerPieces();
-        } else {
-          document.getElementById('qrScanStatus').textContent = '⚠️ QR code non reconnu.';
-        }
-      },
-      function() {}
-    ).catch(function(err) {
-      document.getElementById('qrScanStatus').textContent = 'Erreur caméra : ' + err;
-    });
-  }).catch(function(err) {
-    document.getElementById('qrScanStatus').textContent = 'Erreur : ' + err;
-  });
-}
-
-function fermerScannerPieces() {
-  document.getElementById('qrScanModal').style.display = 'none';
-  if (qrScannerPieces) {
-    qrScannerPieces.stop().catch(function(){});
-    qrScannerPieces = null;
-  }
-}
-</script>
 </body>
 </html>
