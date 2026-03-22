@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Inventaire StockApp</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    h1 { color: #4B0082; }
+    h2 { color: #4B0082; margin-top: 24px; }
+    #items { margin-top: 20px; }
+    .item { padding: 10px; border-bottom: 1px solid #ccc; display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+    .item.has-variants { background: #faf5ff; border-left: 4px solid #4B0082; }
+    .info { flex-grow: 1; }
+    .variants-list { margin-top:6px; font-size:12px; color:#555; }
+    .variant-row { display:inline-block; background:#ede7f6; border-radius:4px; padding:2px 7px; margin:2px; cursor:pointer; }
+    .variant-row:hover { background:#4B0082; color:white; }
+    input { margin: 5px; padding: 6px; }
+    button { margin: 5px; padding: 6px 10px; }
+    #editForm { margin-top: 10px; padding: 10px; border: 1px dashed #ccc; }
+    .controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+    .muted { color: #666; font-size: 12px; }
+    /* Sous-articles form */
+    #variantsSection { margin-top:14px; padding:10px; border:1px solid #ccc; border-radius:6px; background:#fafafa; }
+    .variant-edit-row { display:flex; gap:6px; align-items:center; margin-bottom:4px; flex-wrap:wrap; }
+    /* Modal boîte/mallette */
+    #boxModal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.55); z-index:2000; justify-content:center; align-items:center; }
+    #boxModalBox { background:#fff; border-radius:10px; padding:20px; max-width:420px; width:94%; box-shadow:0 4px 24px rgba(0,0,0,0.3); max-height:90vh; overflow-y:auto; }
+    #boxModalBox h3 { margin-top:0; color:#4B0082; }
+    .filter-bar { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px; }
+    .filter-btn { padding:5px 12px; border:1px solid #4B0082; border-radius:20px; background:white; cursor:pointer; font-size:13px; }
+    .filter-btn.active { background:#4B0082; color:white; }
+    .variant-card { padding:8px 12px; border:1px solid #ddd; border-radius:6px; margin-bottom:6px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; }
+    .variant-card:hover { border-color:#4B0082; background:#faf5ff; }
+    .variant-card.out-of-stock { opacity:0.45; cursor:not-allowed; }
+    /* Modal quantité */
+    #qtyModal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:3000; justify-content:center; align-items:center; }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="/api.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+</head>
+<body>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+  <h1 style="margin:0;">Inventaire</h1>
+  <div>
+    <span id="roleTag" style="font-size:12px;color:#888;margin-right:10px;"></span>
+    <button onclick="window.location.href='/menu.html'" style="background:#eee;border:none;padding:6px 12px;border-radius:4px;cursor:pointer;">🏠 Menu</button>
+    <button onclick="fetch('/api/logout',{method:'POST'}).then(()=>window.location.href='/')" style="background:#eee;border:none;padding:6px 12px;border-radius:4px;cursor:pointer;">🚪</button>
+  </div>
+</div>
+
+  <div class="controls">
+    <input id="name" placeholder="Nom de l'article">
+    <input id="supplier" placeholder="Fournisseur">
+    <input id="price" type="number" step="0.01" placeholder="Prix (€)">
+    <input id="quantity" type="number" placeholder="Quantité">
+    <input id="code" placeholder="Code QR ou identifiant">
+    <button onclick="addCustomItem()">➕ Ajouter article simple</button>
+    <button onclick="addBoxItem()" style="background:#4B0082;color:white;border:none;border-radius:4px;">📦 Ajouter boîte/mallette</button>
+    <div id="reader" style="width:300px; margin-top:10px;"></div>
+    <button onclick="startScanner()">📷 Scanner un code</button>
+    <input id="search" placeholder="Rechercher (nom ou fournisseur)…">
+    <span class="muted" id="countInfo"></span>
+  </div>
+
+  <h2>Articles en stock</h2>
+  <div id="items"></div>
+  <div id="editForm"></div>
+  <button onclick="exportPDF()">📄 Exporter en PDF</button>
+  <button onclick="saveBackupHTML()">💾 Sauvegarder en HTML</button>
+
+  <script>
+    var items = [];
+    var currentFilter = '';
+
+    function normalize(str) {
+      return (str || '').toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+    }
+
+    // ── Affichage des articles ─────────────────────────────────────────
+    function renderItems(list) {
+      if (list === undefined) list = items;
+      var container = document.getElementById('items');
+      container.innerHTML = '';
+      document.getElementById('countInfo').textContent = '(' + list.length + ' affiché(s) / ' + items.length + ' total)';
+      if (list.length === 0) { container.innerHTML = '<p>Aucun article en stock</p>'; return; }
+      list.forEach(function(item) {
+        var variantsHtml = '';
+        if (item.variants && item.variants.length > 0) {
+          var totalStock = item.variants.reduce(function(s,v){ return s + (v.qty||0); }, 0);
+          variantsHtml = '<div class="variants-list">📦 ' + item.variants.length + ' références • Stock total: ' + totalStock + '<br>';
+          item.variants.forEach(function(v) {
+            variantsHtml += '<span class="variant-row" onclick="ouvrirBoxModal(' + item.id + ')">' + v.attr1 + (v.attr2 ? ' ' + v.attr2 : '') + ' (×' + v.qty + ')</span>';
+          });
+          variantsHtml += '</div>';
+        }
+        var hasVariants = item.variants && item.variants.length > 0;
+        container.innerHTML += '<div class="item' + (hasVariants ? ' has-variants' : '') + '">'
+          + '<div class="info"><strong>' + item.name + '</strong>'
+          + (item.code ? ' — <span style="font-size:12px;color:#888;">Code: ' + item.code + '</span>' : '')
+          + '<br>Fournisseur: ' + item.supplier
+          + (!hasVariants ? ' • Stock: ' + item.quantity + ' • Prix: ' + Number(item.price).toFixed(2) + ' €' : '')
+          + variantsHtml + '</div>'
+          + '<div style="display:flex;flex-direction:column;">'
+          + '<button onclick="editItem(' + item.id + ')">✏️ Modifier</button>'
+          + (hasVariants ? '<button onclick="ouvrirBoxModal(' + item.id + ')" style="background:#4B0082;color:white;border:none;border-radius:4px;padding:6px 10px;cursor:pointer;">📦 Utiliser</button>' : '')
+          + '<button onclick="deleteItem(' + item.id + ')">🗑️ Supprimer</button>'
+          + '</div></div>';
+      });
+    }
+
+    function applyFilter() {
+      var q = normalize(currentFilter);
+      if (!q) { renderItems(items); return; }
+      var filtered = items.filter(function(i) {
+        return normalize(i.name).includes(q) || normalize(i.supplier).includes(q) || normalize(i.code).includes(q);
+      });
+      renderItems(filtered);
+    }
+
+    // ── Article simple ────────────────────────────────────────────────
+    function addCustomItem() {
+      var newItem = {
+        id: Date.now(),
+        name: document.getElementById('name').value || 'Article',
+        supplier: document.getElementById('supplier').value || 'Inconnu',
+        price: parseFloat(document.getElementById('price').value) || 0,
+        quantity: parseInt(document.getElementById('quantity').value) || 0,
+        code: document.getElementById('code').value || '',
+        variants: []
+      };
+      items.push(newItem);
+      saveItems();
+      document.getElementById('name').value = '';
+      document.getElementById('supplier').value = '';
+      document.getElementById('price').value = '';
+      document.getElementById('quantity').value = '';
+      document.getElementById('code').value = '';
+      applyFilter();
+    }
+
+    // ── Boîte/mallette ────────────────────────────────────────────────
+    function addBoxItem() {
+      document.getElementById('newBoxModal').style.display = 'flex';
+      setTimeout(function() { document.getElementById('newBoxName').focus(); }, 100);
+    }
+
+    function confirmerNouvelleBoite() {
+      var name = document.getElementById('newBoxName').value.trim();
+      var supplier = document.getElementById('newBoxSupplier').value.trim();
+      var code = document.getElementById('newBoxCode').value.trim();
+      if (!name) { alert('Veuillez saisir un nom.'); return; }
+      document.getElementById('newBoxModal').style.display = 'none';
+      document.getElementById('newBoxName').value = '';
+      document.getElementById('newBoxSupplier').value = '';
+      document.getElementById('newBoxCode').value = '';
+      var newItem = {
+        id: Date.now(),
+        name: name,
+        supplier: supplier || 'Inconnu',
+        price: 0,
+        quantity: 0,
+        code: code,
+        variants: [],
+        attr1Label: 'Diamètre',
+        attr2Label: 'Type'
+      };
+      items.push(newItem);
+      saveItems();
+      applyFilter();
+      editItem(newItem.id);
+    }
+
+    function deleteItem(id) {
+      items = items.filter(function(item) { return item.id !== id; });
+      saveItems();
+      var editForm = document.getElementById('editForm');
+      if (editForm.dataset.editingId == id) { editForm.innerHTML = ''; editForm.dataset.editingId = ''; }
+      applyFilter();
+    }
+
+    // ── Édition article (simple ou boîte) ─────────────────────────────
+    function editItem(id) {
+      var item = items.find(function(i) { return i.id === id; });
+      var editForm = document.getElementById('editForm');
+      editForm.dataset.editingId = id;
+      var isBox = item.variants !== undefined;
+
+      var variantsHtml = '';
+      if (isBox) {
+        variantsHtml = '<div id="variantsSection">'
+          + '<strong>Sous-articles (références)</strong><br>'
+          + '<small>Attribut 1 (ex: Diamètre) : <input id="attr1Label" value="' + (item.attr1Label||'Diamètre') + '" style="width:100px;"></small> '
+          + '<small>Attribut 2 (ex: Type) : <input id="attr2Label" value="' + (item.attr2Label||'Type') + '" style="width:100px;"></small><br><br>'
+          + '<div id="variantRows">';
+        (item.variants || []).forEach(function(v, idx) {
+          variantsHtml += variantRowHtml(idx, v.attr1, v.attr2, v.qty);
+        });
+        variantsHtml += '</div>'
+          + '<button onclick="ajouterLigneVariant()" style="margin-top:8px;">➕ Ajouter une référence</button>'
+          + '</div>';
+      }
+
+      editForm.innerHTML = '<h3>Modifier : ' + item.name + '</h3>'
+        + '<input id="editName" placeholder="Nom" value="' + item.name + '">'
+        + '<input id="editSupplier" placeholder="Fournisseur" value="' + item.supplier + '">'
+        + (!isBox ? '<input id="editPrice" type="number" step="0.01" placeholder="Prix (€)" value="' + item.price + '">' : '')
+        + (!isBox ? '<input id="editQuantity" type="number" placeholder="Quantité" value="' + item.quantity + '">' : '')
+        + '<input id="editCode" placeholder="Code QR ou identifiant" value="' + (item.code||'') + '">'
+        + variantsHtml
+        + '<br><button onclick="saveEdit(' + id + ')">✅ Sauvegarder</button>'
+        + '<button onclick="cancelEdit()">❌ Annuler</button>';
+    }
+
+    function variantRowHtml(idx, a1, a2, qty) {
+      return '<div class="variant-edit-row" id="vrow_' + idx + '">'
+        + '<input placeholder="Attr1 (ex: Ø6)" value="' + (a1||'') + '" style="width:90px;" id="va1_' + idx + '">'
+        + '<input placeholder="Attr2 (ex: Droit)" value="' + (a2||'') + '" style="width:90px;" id="va2_' + idx + '">'
+        + '<input type="number" placeholder="Qté" value="' + (qty||0) + '" style="width:60px;" id="vqty_' + idx + '">'
+        + '<button onclick="supprimerLigneVariant(' + idx + ')" style="background:none;border:none;cursor:pointer;color:#c62828;">✕</button>'
+        + '</div>';
+    }
+
+    var _variantCount = 0;
+    function ajouterLigneVariant() {
+      var container = document.getElementById('variantRows');
+      _variantCount++;
+      var idx = Date.now();
+      var div = document.createElement('div');
+      div.innerHTML = variantRowHtml(idx, '', '', 0);
+      container.appendChild(div.firstChild);
+    }
+
+    function supprimerLigneVariant(idx) {
+      var row = document.getElementById('vrow_' + idx);
+      if (row) row.remove();
+    }
+
+    function saveEdit(id) {
+      var item = items.find(function(i) { return i.id === id; });
+      item.name = document.getElementById('editName').value || item.name;
+      item.supplier = document.getElementById('editSupplier').value || item.supplier;
+      item.code = document.getElementById('editCode').value || item.code;
+
+      var priceEl = document.getElementById('editPrice');
+      var qtyEl = document.getElementById('editQuantity');
+      if (priceEl) item.price = parseFloat(priceEl.value) || 0;
+      if (qtyEl) item.quantity = parseInt(qtyEl.value) || 0;
+
+      // Sauvegarder les variantes si boîte
+      var a1LabelEl = document.getElementById('attr1Label');
+      var a2LabelEl = document.getElementById('attr2Label');
+      if (a1LabelEl) item.attr1Label = a1LabelEl.value || 'Attribut 1';
+      if (a2LabelEl) item.attr2Label = a2LabelEl.value || 'Attribut 2';
+
+      var rows = document.querySelectorAll('[id^="vrow_"]');
+      if (rows.length > 0) {
+        item.variants = [];
+        rows.forEach(function(row) {
+          var idx = row.id.replace('vrow_', '');
+          var a1 = (document.getElementById('va1_' + idx)||{}).value || '';
+          var a2 = (document.getElementById('va2_' + idx)||{}).value || '';
+          var qty = parseInt((document.getElementById('vqty_' + idx)||{}).value) || 0;
+          if (a1) item.variants.push({ attr1: a1, attr2: a2, qty: qty });
+        });
+      }
+
+      saveItems();
+      cancelEdit();
+      applyFilter();
+    }
+
+    function cancelEdit() {
+      var editForm = document.getElementById('editForm');
+      editForm.innerHTML = '';
+      editForm.dataset.editingId = '';
+    }
+
+    function saveItems() {
+      CPSS.saveStock(items);
+    }
+
+    function loadItems() {
+      CPSS.requireAuth().then(function(role) {
+        if (!role) return;
+        // Désactiver les modifications si lecture seule
+        if (role === 'viewer') {
+          document.querySelectorAll('button').forEach(function(b) {
+            if (b.textContent.includes('Ajouter') || b.textContent.includes('Supprimer') || b.textContent.includes('Modifier')) {
+              b.disabled = true; b.style.opacity = '0.4';
+            }
+          });
+        }
+        CPSS.loadStock().then(function(data) {
+          items = data;
+          items.forEach(function(i) { if (!i.variants) i.variants = []; });
+          applyFilter();
+        });
+      });
+    }
+
+    // ── Scanner ───────────────────────────────────────────────────────
+    function startScanner() {
+      var qrReader = new Html5Qrcode("reader");
+      Html5Qrcode.getCameras().then(function(devices) {
+        if (devices && devices.length) {
+          var backCam = devices.find(function(d) { return d.label && d.label.toLowerCase().includes("back"); }) || devices[0];
+          qrReader.start(backCam.id, { fps: 10, qrbox: 300 },
+            function(qrCodeMessage) {
+              var editForm = document.getElementById("editForm");
+              if (editForm.dataset.editingId) {
+                document.getElementById("editCode").value = qrCodeMessage;
+              } else {
+                document.getElementById("code").value = qrCodeMessage;
+                var found = items.find(function(i) { return i.code === qrCodeMessage; });
+                if (found) {
+                  if (found.variants && found.variants.length > 0) {
+                    ouvrirBoxModal(found.id);
+                  } else {
+                    ouvrirModalQuantite(found);
+                  }
+                } else {
+                  document.getElementById("search").value = qrCodeMessage;
+                  currentFilter = qrCodeMessage;
+                  applyFilter();
+                }
+              }
+              qrReader.stop().catch(function(){});
+            },
+            function() {}
+          ).catch(function(err) { console.error(err); });
+        } else { alert("Aucune caméra détectée."); }
+      }).catch(function(err) { console.error("Erreur détection caméras:", err); });
+    }
+
+    // ── Export PDF ────────────────────────────────────────────────────
+    function exportPDF() {
+      var jsPDF = window.jspdf.jsPDF;
+      var doc = new jsPDF();
+      doc.setFontSize(16);
+      doc.text("Inventaire StockApp", 10, 10);
+      var y = 20;
+      items.forEach(function(i) {
+        doc.setFontSize(11);
+        doc.text(i.name + ' — ' + i.supplier + (i.code ? ' | Code: ' + i.code : ''), 10, y);
+        y += 7;
+        if (i.variants && i.variants.length > 0) {
+          i.variants.forEach(function(v) {
+            doc.setFontSize(9);
+            doc.text('  ' + v.attr1 + (v.attr2 ? ' ' + v.attr2 : '') + ' × ' + v.qty, 14, y);
+            y += 6;
+          });
+        } else {
+          doc.setFontSize(9);
+          doc.text('  Stock: ' + i.quantity + ' | Prix: ' + Number(i.price).toFixed(2) + ' €', 14, y);
+          y += 6;
+        }
+        if (y > 270) { doc.addPage(); y = 10; }
+      });
+      doc.save("inventaire.pdf");
+    }
+
+    function escapeHtml(text) {
+      var map = {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'};
+      return String(text).replace(/[&<>"']/g, function(m) { return map[m]; });
+    }
+
+    function saveBackupHTML() {
+      var title = 'Inventaire StockApp - Backup';
+      var timestamp = new Date().toLocaleString();
+      var rows = items.map(function(i) {
+        var sub = '';
+        if (i.variants && i.variants.length > 0) {
+          sub = '<ul>' + i.variants.map(function(v) {
+            return '<li>' + escapeHtml(v.attr1) + (v.attr2 ? ' ' + escapeHtml(v.attr2) : '') + ' × ' + v.qty + '</li>';
+          }).join('') + '</ul>';
+        }
+        return '<li><strong>' + escapeHtml(i.name) + '</strong> — ' + escapeHtml(i.supplier) + (i.code ? ' | Code: ' + escapeHtml(i.code) : '') + sub + '</li>';
+      }).join('\n');
+      var html = '<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>' + title + '</title></head><body><h1>' + title + '</h1><p>' + timestamp + '</p><ul>' + rows + '</ul></body></html>';
+      var blob = new Blob([html], {type:"text/html"});
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement("a");
+      a.href = url; a.download = "inventaire_backup.html"; a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    document.getElementById('search').addEventListener('input', function(e) {
+      currentFilter = e.target.value;
+      applyFilter();
+    });
+
+    CPSS.getRole().then(function(r) {
+      var tag = document.getElementById('roleTag');
+      if (tag) tag.textContent = r === 'admin' ? '👤 Admin' : '👁 Lecture seule';
+    });
+    loadItems();
+  </script>
+
+  <!-- Modal création nouvelle boîte/mallette -->
+  <div id="newBoxModal" onclick="if(event.target===this){arreterScannerBoite();this.style.display='none'}" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:4000;justify-content:center;align-items:center;">
+    <div style="background:#fff;border-radius:10px;padding:24px;max-width:360px;width:92%;box-shadow:0 4px 20px rgba(0,0,0,0.3);">
+      <h3 style="margin-top:0;color:#4B0082;">📦 Nouvelle boîte / mallette</h3>
+      <input id="newBoxName" placeholder="Nom (ex: Mallette raccords pneumatiques)" style="width:100%;padding:8px;box-sizing:border-box;margin-bottom:8px;"><br>
+      <input id="newBoxSupplier" placeholder="Fournisseur (optionnel)" style="width:100%;padding:8px;box-sizing:border-box;margin-bottom:8px;"><br>
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:12px;">
+        <input id="newBoxCode" placeholder="Code-barre / identifiant" style="flex:1;padding:8px;box-sizing:border-box;">
+        <button onclick="scannerCodeBoite()" id="btnScanBoite" style="background:#4B0082;color:white;border:none;padding:8px 10px;border-radius:4px;cursor:pointer;white-space:nowrap;">📷 Scanner</button>
+      </div>
+      <div id="newBoxReader" style="display:none;margin-bottom:10px;"></div>
+      <p id="newBoxScanStatus" style="font-size:12px;color:#4B0082;margin:0 0 8px;display:none;"></p>
+      <div style="display:flex;gap:8px;justify-content:flex-end;">
+        <button onclick="arreterScannerBoite();document.getElementById('newBoxModal').style.display='none'" style="background:#ccc;border:none;padding:8px 14px;border-radius:4px;cursor:pointer;">Annuler</button>
+        <button onclick="confirmerNouvelleBoite()" style="background:#4B0082;color:white;border:none;padding:8px 14px;border-radius:4px;cursor:pointer;">✅ Créer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal boîte/mallette : sélection sous-article -->
+  <div id="boxModal" onclick="if(event.target===this)fermerBoxModal()">
+    <div id="boxModalBox">
+      <h3 id="boxModalTitle">Sélectionner un article</h3>
+      <div id="boxFilterBar" class="filter-bar"></div>
+      <div id="boxVariantList"></div>
+      <button onclick="fermerBoxModal()" style="margin-top:10px;width:100%;padding:8px;background:#888;color:white;border:none;border-radius:4px;cursor:pointer;">✕ Fermer</button>
+    </div>
+  </div>
+
+  <!-- Modal quantité -->
+  <div id="qtyModal" onclick="if(event.target===this)qtyModalCancel()" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:3000;justify-content:center;align-items:center;">
+    <div style="background:#fff;border-radius:10px;padding:24px;max-width:320px;width:90%;box-shadow:0 4px 20px rgba(0,0,0,0.3);">
+      <h3 id="qtyModalTitle" style="margin-top:0;color:#4B0082;">Quantité utilisée</h3>
+      <p id="qtyModalInfo" style="color:#555;font-size:13px;"></p>
+      <input type="number" id="qtyModalInput" min="1" placeholder="Quantité utilisée" style="width:100%;padding:8px;font-size:16px;box-sizing:border-box;margin:10px 0;">
+      <div style="display:flex;gap:8px;justify-content:flex-end;">
+        <button onclick="qtyModalCancel()" style="background:#ccc;border:none;padding:8px 14px;border-radius:4px;cursor:pointer;">Annuler</button>
+        <button onclick="qtyModalConfirm()" style="background:#4B0082;color:white;border:none;padding:8px 14px;border-radius:4px;cursor:pointer;">✅ Confirmer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Panneau articles utilisés aujourd'hui -->
+  <div id="usedPanel" style="margin-top:24px;padding:12px;border:2px solid #4B0082;border-radius:8px;background:#f9f4ff;">
+    <h3 style="color:#4B0082;margin-top:0;">🔧 Articles utilisés aujourd'hui</h3>
+    <div id="usedList"><p style="color:#999;font-size:13px;">Aucun article scanné pour l'instant.</p></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
+      <button onclick="genererQRRecap()" style="background:#4B0082;color:white;border:none;padding:8px 14px;border-radius:4px;cursor:pointer;">📲 Générer QR code récap</button>
+      <button onclick="viderUtilises()" style="background:#c62828;color:white;border:none;padding:8px 14px;border-radius:4px;cursor:pointer;">🗑️ Vider la liste</button>
+    </div>
+    <div id="qrContainer" style="margin-top:12px;text-align:center;"></div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+  <script>
+    var usedItems = JSON.parse(localStorage.getItem('usedItems') || '[]');
+    var pendingItem = null;
+    var currentBoxId = null;
+    var currentBoxFilterAttr1 = null;
+
+    function saveUsed() { localStorage.setItem('usedItems', JSON.stringify(usedItems)); }
+
+    function renderUsed() {
+      var container = document.getElementById('usedList');
+      if (usedItems.length === 0) {
+        container.innerHTML = '<p style="color:#999;font-size:13px;">Aucun article scanné pour l\'instant.</p>';
+        return;
+      }
+      container.innerHTML = usedItems.map(function(u, idx) {
+        return '<div style="padding:4px 0;border-bottom:1px solid #ddd;font-size:13px;"><strong>' + u.name + '</strong> × <strong>' + u.qtyUsed + '</strong>'
+          + '<button onclick="retirerUtilise(' + idx + ')" style="margin-left:8px;background:none;border:none;cursor:pointer;color:#c62828;">✕</button></div>';
+      }).join('');
+    }
+
+    function retirerUtilise(idx) {
+      usedItems.splice(idx, 1);
+      saveUsed(); renderUsed();
+      document.getElementById('qrContainer').innerHTML = '';
+    }
+
+    function viderUtilises() {
+      if (!confirm('Vider la liste ?')) return;
+      usedItems = []; saveUsed(); renderUsed();
+      document.getElementById('qrContainer').innerHTML = '';
+    }
+
+    // ── Modal boîte/mallette ──────────────────────────────────────────
+    function ouvrirBoxModal(itemId) {
+      currentBoxId = itemId;
+      currentBoxFilterAttr1 = null;
+      var item = items.find(function(i) { return i.id === itemId; });
+      if (!item) return;
+      document.getElementById('boxModalTitle').textContent = '📦 ' + item.name;
+      renderBoxModal(item);
+      document.getElementById('boxModal').style.display = 'flex';
+    }
+
+    function renderBoxModal(item) {
+      var variants = item.variants || [];
+      var attr1Label = item.attr1Label || 'Attribut 1';
+
+      // Filtres attr1 uniques
+      var attr1Values = [];
+      variants.forEach(function(v) {
+        if (v.attr1 && attr1Values.indexOf(v.attr1) === -1) attr1Values.push(v.attr1);
+      });
+      attr1Values.sort();
+
+      var filterBar = document.getElementById('boxFilterBar');
+      filterBar.innerHTML = '<span style="font-size:13px;color:#555;align-self:center;">' + attr1Label + ' :</span> ';
+      var allBtn = document.createElement('button');
+      allBtn.className = 'filter-btn' + (currentBoxFilterAttr1 === null ? ' active' : '');
+      allBtn.textContent = 'Tous';
+      allBtn.onclick = function() { currentBoxFilterAttr1 = null; renderBoxModal(item); };
+      filterBar.appendChild(allBtn);
+      attr1Values.forEach(function(val) {
+        var btn = document.createElement('button');
+        btn.className = 'filter-btn' + (currentBoxFilterAttr1 === val ? ' active' : '');
+        btn.textContent = val;
+        btn.onclick = function() { currentBoxFilterAttr1 = val; renderBoxModal(item); };
+        filterBar.appendChild(btn);
+      });
+
+      // Liste des variantes filtrées
+      var filtered = currentBoxFilterAttr1
+        ? variants.filter(function(v) { return v.attr1 === currentBoxFilterAttr1; })
+        : variants;
+
+      var list = document.getElementById('boxVariantList');
+      if (filtered.length === 0) {
+        list.innerHTML = '<p style="color:#999;font-size:13px;">Aucune référence trouvée.</p>';
+        return;
+      }
+      list.innerHTML = '';
+      filtered.forEach(function(v, i) {
+        var realIdx = variants.indexOf(v);
+        var outOfStock = v.qty <= 0;
+        var card = document.createElement('div');
+        card.className = 'variant-card' + (outOfStock ? ' out-of-stock' : '');
+        card.innerHTML = '<span><strong>' + v.attr1 + (v.attr2 ? ' ' + v.attr2 : '') + '</strong></span>'
+          + '<span style="font-size:13px;color:' + (outOfStock ? '#c62828' : '#2e7d32') + ';">Stock: ' + v.qty + '</span>';
+        if (!outOfStock) {
+          card.onclick = function() {
+            fermerBoxModal();
+            pendingItem = { id: item.id, variantIdx: realIdx, name: item.name + ' ' + v.attr1 + (v.attr2 ? ' ' + v.attr2 : ''), qty: v.qty };
+            document.getElementById('qtyModalTitle').textContent = 'Quantité utilisée';
+            document.getElementById('qtyModalInfo').textContent = pendingItem.name + ' (Stock: ' + v.qty + ')';
+            document.getElementById('qtyModalInput').value = '';
+            document.getElementById('qtyModal').style.display = 'flex';
+            setTimeout(function() { document.getElementById('qtyModalInput').focus(); }, 100);
+          };
+        }
+        list.appendChild(card);
+      });
+    }
+
+    function fermerBoxModal() {
+      document.getElementById('boxModal').style.display = 'none';
+      currentBoxId = null;
+    }
+
+    // ── Modal quantité (article simple) ──────────────────────────────
+    function ouvrirModalQuantite(item) {
+      pendingItem = { id: item.id, variantIdx: null, name: item.name, qty: item.quantity };
+      document.getElementById('qtyModalTitle').textContent = 'Quantité utilisée';
+      document.getElementById('qtyModalInfo').textContent = item.name + ' (Stock: ' + item.quantity + ')';
+      document.getElementById('qtyModalInput').value = '';
+      document.getElementById('qtyModal').style.display = 'flex';
+      setTimeout(function() { document.getElementById('qtyModalInput').focus(); }, 100);
+    }
+
+    function qtyModalCancel() {
+      pendingItem = null;
+      document.getElementById('qtyModal').style.display = 'none';
+    }
+
+    function qtyModalConfirm() {
+      var qty = parseInt(document.getElementById('qtyModalInput').value);
+      if (!qty || qty <= 0) { alert('Quantité invalide.'); return; }
+      if (pendingItem) {
+        var stockItem = items.find(function(i) { return i.id === pendingItem.id; });
+        if (stockItem) {
+          if (pendingItem.variantIdx !== null) {
+            // Boîte : décrémenter la variante
+            var v = stockItem.variants[pendingItem.variantIdx];
+            if (qty > v.qty) {
+              if (!confirm('Stock insuffisant (' + v.qty + ' dispo). Continuer quand même ?')) return;
+            }
+            v.qty = Math.max(0, v.qty - qty);
+          } else {
+            // Article simple
+            if (qty > stockItem.quantity) {
+              if (!confirm('Stock insuffisant (' + stockItem.quantity + ' dispo). Continuer quand même ?')) return;
+            }
+            stockItem.quantity = Math.max(0, stockItem.quantity - qty);
+          }
+          saveItems();
+          applyFilter();
+        }
+        // Ajouter à la liste récap
+        var existing = usedItems.find(function(u) { return u.name === pendingItem.name; });
+        if (existing) { existing.qtyUsed += qty; }
+        else { usedItems.push({ name: pendingItem.name, qtyUsed: qty }); }
+        saveUsed();
+        renderUsed();
+        document.getElementById('qrContainer').innerHTML = '';
+      }
+      pendingItem = null;
+      document.getElementById('qtyModal').style.display = 'none';
+    }
+
+    function genererQRRecap() {
+      if (usedItems.length === 0) { alert('Aucun article.'); return; }
+      var payload = 'CPSS_PIECES:' + usedItems.map(function(u) {
+        return encodeURIComponent(u.name) + '||' + u.qtyUsed;
+      }).join(';');
+      if (payload.length > 2000) { alert('Trop d\'articles pour un seul QR code.'); return; }
+      var container = document.getElementById('qrContainer');
+      container.innerHTML = '<p style="font-size:13px;">Scannez depuis la tablette :</p><canvas id="qrCanvas"></canvas>';
+      new QRious({ element: document.getElementById('qrCanvas'), value: payload, size: 250, level: 'M' });
+    }
+
+    renderUsed();
+
+    // ── Scanner code-barre dans la popup nouvelle boîte ───────────────
+    var _scannerBoite = null;
+
+    function scannerCodeBoite() {
+      var readerDiv = document.getElementById('newBoxReader');
+      var statusEl = document.getElementById('newBoxScanStatus');
+      var btn = document.getElementById('btnScanBoite');
+
+      if (_scannerBoite) { arreterScannerBoite(); return; }
+
+      readerDiv.style.display = 'block';
+      statusEl.style.display = 'block';
+      statusEl.textContent = 'Pointez la caméra vers le code-barre…';
+      btn.textContent = '⏹ Arrêter';
+
+      _scannerBoite = new Html5Qrcode("newBoxReader");
+      Html5Qrcode.getCameras().then(function(devices) {
+        if (!devices || !devices.length) {
+          statusEl.textContent = 'Aucune caméra détectée.';
+          return;
+        }
+        var cam = devices.find(function(d) { return d.label && d.label.toLowerCase().includes('back'); }) || devices[0];
+        _scannerBoite.start(cam.id, { fps: 10, qrbox: 220 },
+          function(code) {
+            document.getElementById('newBoxCode').value = code;
+            statusEl.textContent = '✅ Code scanné : ' + code;
+            arreterScannerBoite();
+          },
+          function() {}
+        ).catch(function(err) {
+          statusEl.textContent = 'Erreur caméra : ' + err;
+        });
+      }).catch(function(err) {
+        statusEl.textContent = 'Erreur : ' + err;
+      });
+    }
+
+    function arreterScannerBoite() {
+      if (_scannerBoite) {
+        _scannerBoite.stop().catch(function(){});
+        _scannerBoite = null;
+      }
+      document.getElementById('newBoxReader').style.display = 'none';
+      document.getElementById('btnScanBoite').textContent = '📷 Scanner';
+    }
+  </script>
+</body>
+</html>

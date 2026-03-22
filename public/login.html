@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CPSS — Connexion</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #4B0082, #7B1FA2);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 40px;
+      width: 100%;
+      max-width: 360px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+      text-align: center;
+    }
+    h1 { color: #4B0082; font-size: 24px; margin-bottom: 6px; }
+    p.sub { color: #888; font-size: 13px; margin-bottom: 28px; }
+    input[type="password"] {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #ddd;
+      border-radius: 6px;
+      font-size: 16px;
+      margin-bottom: 16px;
+      transition: border-color 0.2s;
+    }
+    input[type="password"]:focus { outline: none; border-color: #4B0082; }
+    button {
+      width: 100%;
+      padding: 12px;
+      background: #4B0082;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover { background: #6A1B9A; }
+    .error { color: #c62828; font-size: 13px; margin-top: 12px; display: none; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>🔧 CPSS</h1>
+    <p class="sub">Gestion stock & rapports d'intervention</p>
+    <input type="password" id="password" placeholder="Mot de passe" onkeydown="if(event.key==='Enter')login()">
+    <button onclick="login()">Se connecter</button>
+    <p class="error" id="errorMsg">Mot de passe incorrect.</p>
+  </div>
+  <script>
+    // Vérifier si déjà connecté
+    fetch('/api/me').then(r => r.json()).then(data => {
+      if (data.role) window.location.href = '/menu.html';
+    }).catch(() => {});
+
+    function login() {
+      const pwd = document.getElementById('password').value;
+      fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: pwd })
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.ok) {
+          window.location.href = '/menu.html';
+        } else {
+          document.getElementById('errorMsg').style.display = 'block';
+        }
+      })
+      .catch(() => {
+        document.getElementById('errorMsg').textContent = 'Erreur de connexion.';
+        document.getElementById('errorMsg').style.display = 'block';
+      });
+    }
+  </script>
+</body>
+</html>

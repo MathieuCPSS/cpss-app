@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CPSS — Menu</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #4B0082, #7B1FA2);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 36px;
+      width: 100%;
+      max-width: 380px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+      text-align: center;
+    }
+    h1 { color: #4B0082; font-size: 22px; margin-bottom: 4px; }
+    .role { font-size: 12px; color: #888; margin-bottom: 28px; }
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 16px;
+      margin-bottom: 14px;
+      border: none;
+      border-radius: 8px;
+      font-size: 17px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: opacity 0.2s;
+    }
+    .btn:hover { opacity: 0.85; }
+    .btn-stock { background: #4B0082; color: white; }
+    .btn-rapport { background: #1565C0; color: white; }
+    .btn-logout { background: #eee; color: #555; font-size: 13px; padding: 10px; margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>🔧 CPSS</h1>
+    <p class="role" id="roleLabel">Chargement…</p>
+    <a href="/stock.html" class="btn btn-stock">📦 Gestion du stock</a>
+    <a href="/rapport.html" class="btn btn-rapport" id="btnRapport">📋 Rapports d'intervention</a>
+    <button onclick="logout()" class="btn btn-logout">🚪 Se déconnecter</button>
+  </div>
+  <script>
+    fetch('/api/me').then(r => r.json()).then(data => {
+      if (!data.role) { window.location.href = '/'; return; }
+      document.getElementById('roleLabel').textContent =
+        data.role === 'admin' ? '👤 Connecté en tant qu\'administrateur' : '👁 Connecté en lecture seule (bureau)';
+      if (data.role === 'viewer') {
+        document.getElementById('btnRapport').textContent = '📋 Consulter les rapports';
+      }
+    }).catch(() => window.location.href = '/');
+
+    function logout() {
+      fetch('/api/logout', { method: 'POST' }).then(() => window.location.href = '/');
+    }
+  </script>
+</body>
+</html>
