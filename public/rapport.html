@@ -1090,7 +1090,12 @@ function modifierClient() {
     <button onclick="remplirEtAppliquerClient()">📋 Remplir et appliquer</button>
     <button onclick="modifierClient()">✏️ Modifier</button>
     <button onclick="fermerClientModal()">Fermer</button>
-    <button onclick="e
+    <button onclick="exporterClients()">📤 Exporter</button>
+    <input type="file" id="importFile" accept=".json" style="display:none" onchange="importerClients()">
+    <button onclick="document.getElementById('importFile').click()">📥 Importer</button>
+  </div>
+</div>
+
 <script>
 var qrScannerPieces = null;
 
