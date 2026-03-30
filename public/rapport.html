@@ -719,9 +719,9 @@ if (trajet) {
         // ── Gestion multi-rapports ──────────────────────────────────────────
     const STORAGE_PREFIX = 'rapportCPSS_';
 
-    function getCleRapport(client, semaine, annee) {
-      return STORAGE_PREFIX + encodeURIComponent(client.trim()) + '_S' + semaine + '_' + annee;
-    }
+   function getCleRapport(client, semaine, annee) {
+  return encodeURIComponent(client.trim()) + '_S' + semaine + '_' + annee;
+}
 
     function getTousLesRapports() {
       const rapports = [];
