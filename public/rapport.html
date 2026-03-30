@@ -825,11 +825,11 @@ if (trajet) {
           rafraichirListe();
           document.getElementById('liste-rapports').value = cle;
         }).catch(err => {
-          localStorage.setItem('rapport_' + cle, JSON.stringify(donnees));
+         localStorage.setItem(cle, JSON.stringify(donnees));
           alert('Rapport sauvegardé localement.');
         });
       } else {
-        localStorage.setItem('rapport_' + cle, JSON.stringify(donnees));
+       localStorage.setItem(cle, JSON.stringify(donnees));
         alert('API indisponible. Rapport sauvegardé localement.');
       }
     }
