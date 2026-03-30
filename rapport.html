@@ -745,14 +745,13 @@ function rafraichirListe() {
     const valeurActuelle = select.value;
     select.innerHTML = '<option value="">-- Sélectionner un rapport --</option>';
 
-    // 🔥 Si CPSS est disponible → on utilise l’API
     if (typeof CPSS !== 'undefined' && CPSS.loadRapports) {
       CPSS.loadRapports().then(liste => {
         liste.sort((a,b) => a.key.localeCompare(b.key));
         liste.forEach(item => {
           const opt = document.createElement('option');
           opt.value = item.key;
-          opt.textContent = item.label;
+          opt.textContent = item.label || item.key.replace("rapportCPSS_", "");
           select.appendChild(opt);
         });
         select.value = valeurActuelle;
@@ -761,7 +760,6 @@ function rafraichirListe() {
         chargerDepuisLocalStorage(select, valeurActuelle);
       });
     } else {
-      // 🔥 Fallback localStorage
       chargerDepuisLocalStorage(select, valeurActuelle);
     }
 
