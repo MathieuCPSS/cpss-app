@@ -1054,10 +1054,9 @@ document.addEventListener('DOMContentLoaded', () => {
 window.closeSignatureModal = function() {
   modal.style.display = 'none';
 };
-
 window.validateSignature = function() {
   const mainCanvas = document.getElementById("signatureCanvas");
-  const modalCanvas = document.getElementById("modalCanvas"); // ← ajout nécessaire
+  const modalCanvas = document.getElementById("modalCanvas");
 
   if (!mainCanvas || !modalCanvas) return closeSignatureModal();
 
@@ -1071,18 +1070,32 @@ window.validateSignature = function() {
     mainCanvas.height = h;
 
     mainCtx.clearRect(0, 0, w, h);
-     // ✅ Mise à l’échelle ici
+
+    // Mise à l’échelle
     mainCtx.drawImage(img, 0, 0, img.width, img.height, 0, 0, w, h);
 
-
-
+    // Fermer le modal
     closeSignatureModal();
+
+    // 🔥 1. Convertir la signature en base64
+    const signatureData = mainCanvas.toDataURL("image/png");
+
+    // 🔥 2. Mettre à jour les données du rapport
+    if (!window.rapportData) window.rapportData = {};
+    window.rapportData.signature = signatureData;
+
+    // 🔥 3. Sauvegarde automatique
+    CPSS.saveRapport(window.rapportCle, window.rapportData)
+      .then(() => console.log("💾 Sauvegarde automatique après signature OK"))
+      .catch(err => console.error("❌ Erreur sauvegarde auto :", err));
   };
 
-  img.src = modalCanvas.toDataURL(); // ← maintenant modalCanvas est bien défini
+  // Charger l’image depuis le canvas modal
+  img.src = modalCanvas.toDataURL("image/png");
 };
 });
 </script>
+
 <script>
 function ouvrirClientModal() {
   const list = document.getElementById("clientList");
