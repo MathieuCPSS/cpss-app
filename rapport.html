@@ -739,29 +739,51 @@ if (trajet) {
       return partie;
     }
 
-    function rafraichirListe() {
-      try {
-        const select = document.getElementById('liste-rapports');
-        const valeurActuelle = select.value;
-        select.innerHTML = '<option value="">-- Sélectionner un rapport --</option>';
-        if (typeof CPSS !== 'undefined' && CPSS.loadRapports) {
-          CPSS.loadRapports().then(liste => {
-            liste.sort((a,b) => a.key.localeCompare(b.key));
-            liste.forEach(item => {
-              const opt = document.createElement('option');
-              opt.value = item.key;
-              opt.textContent = item.label;
-              select.appendChild(opt);
-            });
-            select.value = valeurActuelle;
-          }).catch(err => console.log('Erreur chargement:', err));
-        } else {
-          console.log('CPSS non disponible');
-        }
-      } catch(err) {
-        console.error('Erreur rafraichirListe:', err);
-      }
+function rafraichirListe() {
+  try {
+    const select = document.getElementById('liste-rapports');
+    const valeurActuelle = select.value;
+    select.innerHTML = '<option value="">-- Sélectionner un rapport --</option>';
+
+    // 🔥 Si CPSS est disponible → on utilise l’API
+    if (typeof CPSS !== 'undefined' && CPSS.loadRapports) {
+      CPSS.loadRapports().then(liste => {
+        liste.sort((a,b) => a.key.localeCompare(b.key));
+        liste.forEach(item => {
+          const opt = document.createElement('option');
+          opt.value = item.key;
+          opt.textContent = item.label;
+          select.appendChild(opt);
+        });
+        select.value = valeurActuelle;
+      }).catch(err => {
+        console.log('Erreur CPSS, fallback localStorage:', err);
+        chargerDepuisLocalStorage(select, valeurActuelle);
+      });
+    } else {
+      // 🔥 Fallback localStorage
+      chargerDepuisLocalStorage(select, valeurActuelle);
     }
+
+  } catch(err) {
+    console.error('Erreur rafraichirListe:', err);
+  }
+}
+
+function chargerDepuisLocalStorage(select, valeurActuelle) {
+  const keys = Object.keys(localStorage)
+    .filter(k => k.startsWith("rapportCPSS_"))
+    .sort();
+
+  keys.forEach(key => {
+    const opt = document.createElement('option');
+    opt.value = key;
+    opt.textContent = key.replace("rapportCPSS_", "");
+    select.appendChild(opt);
+  });
+
+  select.value = valeurActuelle;
+}
 
     function getAllInputs() {
       return Array.from(document.querySelectorAll('input, textarea, #descriptif'));
