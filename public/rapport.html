@@ -1084,8 +1084,16 @@ window.validateSignature = function() {
     if (!window.rapportData) window.rapportData = {};
     window.rapportData.signature = signatureData;
 
-    // ❌ Plus de sauvegarde automatique ici
-    console.log("Signature validée et stockée localement dans window.rapportData");
+    console.log("Signature validée.");
+
+    // 🔥 Sauvegarde automatique SEULEMENT si la clé existe
+    if (window.rapportCle) {
+      CPSS.saveRapport(window.rapportCle, window.rapportData)
+        .then(() => console.log("💾 Sauvegarde automatique après signature OK"))
+        .catch(err => console.error("❌ Erreur sauvegarde auto :", err));
+    } else {
+      console.log("⚠️ Pas de clé de rapport → pas de sauvegarde automatique.");
+    }
   };
 
   img.src = modalCanvas.toDataURL("image/png");
