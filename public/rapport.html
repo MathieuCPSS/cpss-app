@@ -1077,20 +1077,17 @@ window.validateSignature = function() {
     // Fermer le modal
     closeSignatureModal();
 
-    // 🔥 1. Convertir la signature en base64
+    // Convertir la signature en base64
     const signatureData = mainCanvas.toDataURL("image/png");
 
-    // 🔥 2. Mettre à jour les données du rapport
+    // Mettre à jour les données du rapport
     if (!window.rapportData) window.rapportData = {};
     window.rapportData.signature = signatureData;
 
-    // 🔥 3. Sauvegarde automatique
-    CPSS.saveRapport(window.rapportCle, window.rapportData)
-      .then(() => console.log("💾 Sauvegarde automatique après signature OK"))
-      .catch(err => console.error("❌ Erreur sauvegarde auto :", err));
+    // ❌ Plus de sauvegarde automatique ici
+    console.log("Signature validée et stockée localement dans window.rapportData");
   };
 
-  // Charger l’image depuis le canvas modal
   img.src = modalCanvas.toDataURL("image/png");
 };
 });
