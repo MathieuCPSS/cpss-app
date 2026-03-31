@@ -23,6 +23,12 @@
       box-shadow: 0 8px 32px rgba(0,0,0,0.3);
       text-align: center;
     }
+    .logo {
+  width: 160px;      /* Ajuste selon ton goût */
+  height: auto;
+  display: block;
+  margin: 0 auto 15px auto;
+}
     h1 { color: #4B0082; font-size: 24px; margin-bottom: 6px; }
     p.sub { color: #888; font-size: 13px; margin-bottom: 28px; }
     input[type="password"] {
@@ -52,7 +58,9 @@
 </head>
 <body>
   <div class="card">
-    <h1>🔧 CPSS</h1>
+    <h1 class="titre">
+  <img src="img/logo-cpss.png" alt="Logo CPSS" class="logo">
+</h1>
     <p class="sub">Gestion stock & rapports d'intervention</p>
     <input type="password" id="password" placeholder="Mot de passe" onkeydown="if(event.key==='Enter')login()">
     <button onclick="login()">Se connecter</button>
