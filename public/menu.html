@@ -8,12 +8,27 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: "Segoe UI", Robot, Arial, sans-serif;
-      background: linear-gradient(135deg, #2c2c2c, #4a4a4a);
+      background: url("ATMA.png") no-repeat center center fixed;
+      background-size: cover;
       min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
     }
+    /* Voile sombre par-dessus l'image */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.25); /* voile léger */
+  pointer-events: none;
+  z-index: -1;
+}
+
+
     .card {
       background: rgba(255, 255, 255, 0.15);
       backdrop-filter: blur(10px);
