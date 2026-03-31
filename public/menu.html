@@ -27,6 +27,9 @@ body::before {
     rgba(45, 70, 120, 0.45),
     rgba(30, 50, 90, 0.45)
   );
+    pointer-events: none;
+  z-index: -1;
+  }
 body::after {
   content: "";
   position: fixed;
@@ -41,10 +44,6 @@ body::after {
   radial-gradient(circle, rgba(80,120,180,006) 1px, transparent 1px);
   background-size: 22px 22px;
 }
-  pointer-events: none;
-  z-index: -1;
-}
-
 
     .card {
       background: rgba(255, 255, 255, 0.03);
