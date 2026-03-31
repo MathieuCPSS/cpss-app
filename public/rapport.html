@@ -834,30 +834,50 @@ if (trajet) {
       }
     }
 
-    function chargerRapport() {
-      const cle = document.getElementById('liste-rapports').value;
-      if (!cle) { alert('Veuillez sélectionner un rapport à charger.'); return; }
-      if (typeof CPSS !== 'undefined' && CPSS.loadRapport) {
-        CPSS.loadRapport(cle).then(donnees => {
-          if (!donnees) { alert('Rapport introuvable.'); return; }
-          appliquerDonnees(donnees);
-          if (donnees['_save_client']) document.getElementById('save-client').value = donnees['_save_client'];
-          if (donnees['_save_semaine']) document.getElementById('save-semaine').value = donnees['_save_semaine'];
-          if (donnees['_save_annee']) document.getElementById('save-annee').value = donnees['_save_annee'];
-          alert('Rapport "' + nomAffichage(cle) + '" chargé !');
-        }).catch(err => {
-          const donnees = JSON.parse(localStorage.getItem('rapport_' + cle) || '{}');
-          if (!donnees || Object.keys(donnees).length === 0) { alert('Rapport introuvable.'); return; }
-          appliquerDonnees(donnees);
-          alert('Rapport "' + nomAffichage(cle) + '" chargé (local) !');
-        });
-      } else {
-        const donnees = JSON.parse(localStorage.getItem('rapport_' + cle) || '{}');
-        if (!donnees || Object.keys(donnees).length === 0) { alert('API indisponible et rapport non trouvé localement.'); return; }
-        appliquerDonnees(donnees);
-        alert('Rapport "' + nomAffichage(cle) + '" chargé (stockage local) !');
-      }
-    }
+function chargerRapport() {
+  const cle = document.getElementById('liste-rapports').value;
+  if (!cle) { alert('Veuillez sélectionner un rapport à charger.'); return; }
+
+  if (typeof CPSS !== 'undefined' && CPSS.loadRapport) {
+    CPSS.loadRapport(cle).then(donnees => {
+      if (!donnees) { alert('Rapport introuvable.'); return; }
+
+      appliquerDonnees(donnees);
+
+      // 🔥 Mise à jour des variables globales
+      window.rapportCle = cle;
+      window.rapportData = donnees;
+
+      if (donnees['_save_client']) document.getElementById('save-client').value = donnees['_save_client'];
+      if (donnees['_save_semaine']) document.getElementById('save-semaine').value = donnees['_save_semaine'];
+      if (donnees['_save_annee']) document.getElementById('save-annee').value = donnees['_save_annee'];
+
+      alert('Rapport "' + nomAffichage(cle) + '" chargé !');
+    }).catch(err => {
+      const donnees = JSON.parse(localStorage.getItem('rapport_' + cle) || '{}');
+      if (!donnees || Object.keys(donnees).length === 0) { alert('Rapport introuvable.'); return; }
+
+      appliquerDonnees(donnees);
+
+      // 🔥 Mise à jour des variables globales
+      window.rapportCle = cle;
+      window.rapportData = donnees;
+
+      alert('Rapport "' + nomAffichage(cle) + '" chargé (local) !');
+    });
+  } else {
+    const donnees = JSON.parse(localStorage.getItem('rapport_' + cle) || '{}');
+    if (!donnees || Object.keys(donnees).length === 0) { alert('API indisponible et rapport non trouvé localement.'); return; }
+
+    appliquerDonnees(donnees);
+
+    // 🔥 Mise à jour des variables globales
+    window.rapportCle = cle;
+    window.rapportData = donnees;
+
+    alert('Rapport "' + nomAffichage(cle) + '" chargé (stockage local) !');
+  }
+}
 
     function supprimerRapport() {
       const cle = document.getElementById('liste-rapports').value;
