@@ -471,6 +471,7 @@
     <div style="display:flex; gap:8px; justify-content:center; flex-wrap:wrap;">
       <button onclick="exporterPDF()" style="padding:6px 14px; background:#555; color:white; border:none; border-radius:4px; cursor:pointer;">📄 Exporter en PDF</button>
       <button onclick="sauvegarderDansFichierHTML()" style="padding:6px 14px; background:#6a1b9a; color:white; border:none; border-radius:4px; cursor:pointer;">📄💾 Sauvegarder fichier HTML</button>
+      <button onclick="exporterICS()">Exporter vers Outlook (.ics)</button>
       <button onclick="viderDonnees()" style="padding:6px 14px; background:#888; color:white; border:none; border-radius:4px; cursor:pointer;">🧹 Nouveau rapport vierge</button>
     </div>
   </div>
@@ -1260,6 +1261,67 @@ function modifierClient() {
 }
 </script>
 
+  <script>
+    function exporterICS() {
+  const societe = document.getElementById("societe").value.trim() || "Client";
+
+  let ics = "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//CPSS//Rapport//FR\n";
+
+  document.querySelectorAll(".ligne-saisie").forEach(ligne => {
+    const date = ligne.querySelector("input[type=date]").value;
+    const debut = ligne.querySelector(".debut").value;
+    const fin = ligne.querySelector(".fin").value;
+    const trajet = ligne.querySelector(".temps-trajet").value;
+
+    if (!date) return; // ignore la ligne vide
+
+    let description = "";
+    if (trajet) {
+      const [h, m] = trajet.split(":");
+      description = `Trajet : ${h}h${m}`;
+    }
+
+    // Format ICS : YYYYMMDDTHHMMSS
+    const dateICS = date.replace(/-/g, "");
+
+    let event = "BEGIN:VEVENT\n";
+    event += `UID:${Date.now()}-${Math.random()}@cpss\n`;
+    event += `SUMMARY:${societe}\n`;
+
+    if (debut && fin) {
+      const dtStart = dateICS + "T" + debut.replace(":", "") + "00";
+      const dtEnd   = dateICS + "T" + fin.replace(":", "") + "00";
+
+      event += `DTSTART:${dtStart}\n`;
+      event += `DTEND:${dtEnd}\n`;
+    } else {
+      // Événement all-day
+      event += `DTSTART;VALUE=DATE:${dateICS}\n`;
+      event += `DTEND;VALUE=DATE:${dateICS}\n`;
+    }
+
+    if (description) {
+      event += `DESCRIPTION:${description}\n`;
+    }
+
+    event += "END:VEVENT\n";
+
+    ics += event;
+  });
+
+  ics += "END:VCALENDAR";
+
+  const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `intervention_${societe}.ics`;
+  a.click();
+
+  URL.revokeObjectURL(url);
+}
+    </script>
   <!-- Modale de signature -->
   <div id="signatureModal" class="modal">
     <div class="modal-content">
