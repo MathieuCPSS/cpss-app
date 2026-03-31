@@ -1,18 +1,19 @@
 const express = require('express');
 const session = require('express-session');
-const bcrypt = require('bcryptjs');
+const bcrypt = require('bcryptjs'); // actuellement non utilisé, mais dispo si tu veux hasher plus tard
 const fs = require('fs');
 const path = require('path');
+const rateLimit = require('express-rate-limit');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ── Mots de passe (hashés au démarrage) ─────────────────────────────
+// ── Mots de passe (issus des variables d'environnement) ───────────────
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'cpss-admin-2025';
 const VIEWER_PASSWORD = process.env.VIEWER_PASSWORD || 'cpss-bureau-2025';
 const SESSION_SECRET = process.env.SESSION_SECRET || 'cpss-secret-change-me';
 
-// ── Chemins des fichiers de données ──────────────────────────────────
+// ── Chemins des fichiers de données ───────────────────────────────────
 const DATA_DIR = path.join(__dirname, 'data');
 const STOCK_FILE = path.join(DATA_DIR, 'stock.json');
 const RAPPORTS_FILE = path.join(DATA_DIR, 'rapports.json');
@@ -22,21 +23,41 @@ if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 if (!fs.existsSync(STOCK_FILE)) fs.writeFileSync(STOCK_FILE, '[]');
 if (!fs.existsSync(RAPPORTS_FILE)) fs.writeFileSync(RAPPORTS_FILE, '{}');
 
-// ── Middleware ────────────────────────────────────────────────────────
+// ── Middleware globaux ────────────────────────────────────────────────
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
+
+// Sessions sécurisées
 app.use(session({
   secret: SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
-  cookie: { maxAge: 7 * 24 * 60 * 60 * 1000 } // 7 jours
+  cookie: {
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 jours
+    httpOnly: true,                  // non lisible par JS
+    secure: true,                    // cookie seulement via HTTPS (OK sur Render)
+    sameSite: 'strict'               // limite les attaques CSRF
+  }
 }));
+
+// Fichiers statiques
 app.use(express.static(path.join(__dirname, 'public')));
+
+// ── Rate limit sur /api/login ─────────────────────────────────────────
+const loginLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 5,              // 5 tentatives par minute
+  standardHeaders: true,
+  legacyHeaders: false
+});
 
 // ── Helpers ───────────────────────────────────────────────────────────
 function readJSON(file) {
-  try { return JSON.parse(fs.readFileSync(file, 'utf8')); }
-  catch { return file === STOCK_FILE ? [] : {}; }
+  try {
+    return JSON.parse(fs.readFileSync(file, 'utf8'));
+  } catch {
+    return file === STOCK_FILE ? [] : {};
+  }
 }
 
 function writeJSON(file, data) {
@@ -54,22 +75,27 @@ function requireAdmin(req, res, next) {
 }
 
 // ── Auth ──────────────────────────────────────────────────────────────
-app.post('/api/login', (req, res) => {
+app.post('/api/login', loginLimiter, (req, res) => {
   const { password } = req.body;
+
   if (password === ADMIN_PASSWORD) {
     req.session.role = 'admin';
     return res.json({ ok: true, role: 'admin' });
   }
+
   if (password === VIEWER_PASSWORD) {
     req.session.role = 'viewer';
     return res.json({ ok: true, role: 'viewer' });
   }
+
+  // On ne donne pas plus d'info que nécessaire
   res.status(401).json({ error: 'Mot de passe incorrect' });
 });
 
 app.post('/api/logout', (req, res) => {
-  req.session.destroy();
-  res.json({ ok: true });
+  req.session.destroy(() => {
+    res.json({ ok: true });
+  });
 });
 
 app.get('/api/me', (req, res) => {
@@ -123,7 +149,7 @@ app.delete('/api/rapports/:key', requireAdmin, (req, res) => {
 // ── Ping pour garder le serveur éveillé ───────────────────────────────
 app.get('/ping', (req, res) => res.send('pong'));
 
-// ── Page principale → redirection selon auth ─────────────────────────
+// ── Page principale ───────────────────────────────────────────────────
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
