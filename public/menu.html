@@ -41,11 +41,19 @@
     .btn-stock { background: #1f3b4d; color: white; }
     .btn-rapport { background: #1f3b4d; color: white; }
     .btn-logout { background: #1f3b4d; color: white; font-size: 13px; padding: 10px; margin-top: 8px; }
+    .logo {
+  width: 160px;      /* Ajuste selon ton goût */
+  height: auto;
+  display: block;
+  margin: 0 auto 15px auto;
+}
   </style>
 </head>
 <body>
   <div class="card">
-    <h1>🔧 CPSS</h1>
+    <h1 class="titre">
+  <img src="img/logo-cpss.png" alt="Logo CPSS" class="logo">
+</h1>
     <p class="role" id="roleLabel">Chargement…</p>
     <a href="/stock.html" class="btn btn-stock">📦 Gestion du stock</a>
     <a href="/rapport.html" class="btn btn-rapport" id="btnRapport">📋 Rapports d'intervention</a>
