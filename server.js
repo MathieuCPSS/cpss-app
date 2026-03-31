@@ -32,12 +32,12 @@ app.use(session({
   secret: SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
-  cookie: {
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 jours
-    httpOnly: true,                  // non lisible par JS
-    secure: true,                    // cookie seulement via HTTPS (OK sur Render)
-    sameSite: 'strict'               // limite les attaques CSRF
-  }
+cookie: {
+  maxAge: 7 * 24 * 60 * 60 * 1000,
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "strict"
+}
 }));
 
 // Fichiers statiques
