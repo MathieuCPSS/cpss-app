@@ -290,43 +290,28 @@ function genererCalendrier() {
 
 genererCalendrier();
 </script>
-   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>    
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script>
 async function exportPDF() {
-const { jsPDF } = window.jspdf;
 
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF("p", "mm", "a4");
 
     const original = document.getElementById("calendrier");
-
-    // On récupère tous les blocs .mois (12 mois)
     const mois = Array.from(original.querySelectorAll(".mois"));
 
-    // On va créer des groupes de 3 mois
+    // Groupes de 3 mois
     const groupes = [];
     for (let i = 0; i < mois.length; i += 3) {
         groupes.push(mois.slice(i, i + 3));
     }
 
-    // Options PDF
-    const opt = {
-        margin: 10,
-        filename: `Calendrier_${annee}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { 
-            scale: 3,
-            useCORS: true,
-            letterRendering: true
-        },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-    };
-
-
-
     let firstPage = true;
 
     for (const groupe of groupes) {
 
-        // 1) Créer un conteneur temporaire
+        // Conteneur temporaire
         const page = document.createElement("div");
         page.style.width = "1000px";
         page.style.background = "white";
@@ -335,7 +320,7 @@ const { jsPDF } = window.jspdf;
         page.style.gap = "20px";
         page.style.padding = "20px";
 
-        // 2) Ajouter les 3 mois clonés
+        // Ajouter les 3 mois clonés
         groupe.forEach(moisDiv => {
             const clone = moisDiv.cloneNode(true);
 
@@ -349,18 +334,17 @@ const { jsPDF } = window.jspdf;
             page.appendChild(clone);
         });
 
-        // 3) Ajouter la page hors écran
+        // Ajouter hors écran
         const container = document.createElement("div");
         container.style.position = "fixed";
         container.style.left = "-9999px";
         container.appendChild(page);
         document.body.appendChild(container);
 
-        // 4) Convertir en image
-        const canvas = await html2canvas(page, opt.html2canvas);
+        // Capture
+        const canvas = await html2canvas(page, { scale: 3 });
         const imgData = canvas.toDataURL("image/jpeg", 0.98);
 
-        // 5) Ajouter au PDF
         if (!firstPage) pdf.addPage();
         firstPage = false;
 
@@ -369,11 +353,9 @@ const { jsPDF } = window.jspdf;
 
         pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, pdfHeight);
 
-        // 6) Nettoyage
         document.body.removeChild(container);
     }
 
-    // 7) Sauvegarde finale
     pdf.save(`Calendrier_${annee}.pdf`);
 }
 
