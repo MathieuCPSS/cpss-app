@@ -71,6 +71,12 @@ h1 {
     font-size: 11px;
     margin-top: 2px;
 }
+  .ferie {
+    background: #ffe8a6 !important;
+    border: 1px solid #e0b84d;
+    color: #8a5a00;
+    font-weight: 600;
+}  
 </style>
 </head>
 <body>
@@ -88,10 +94,63 @@ h1 {
 <div class="calendrier" id="calendrier"></div>
 
 <script>
+    function joursFeriesFrance(annee) {
+    // Calcul de la date de Pâques (algorithme de Meeus)
+    let f = Math.floor,
+        G = annee % 19,
+        C = f(annee / 100),
+        H = (C - f(C / 4) - f((8 * C + 13) / 25) + 19 * G + 15) % 30,
+        I = H - f(H / 28) * (1 - f(29 / (H + 1)) * f((21 - G) / 11)),
+        J = (annee + f(annee / 4) + I + 2 - C + f(C / 4)) % 7,
+        L = I - J,
+        moisPaques = 3 + f((L + 40) / 44),
+        jourPaques = L + 28 - 31 * f(moisPaques / 4);
+
+    const datePaques = new Date(annee, moisPaques - 1, jourPaques);
+
+    function addDays(date, days) {
+        let d = new Date(date);
+        d.setDate(d.getDate() + days);
+        return d;
+    }
+
+    // Jours fériés fixes
+    const feries = {
+        [`${annee}-01-01`]: "Jour de l'an",
+        [`${annee}-05-01`]: "Fête du Travail",
+        [`${annee}-05-08`]: "Victoire 1945",
+        [`${annee}-07-14`]: "Fête Nationale",
+        [`${annee}-08-15`]: "Assomption",
+        [`${annee}-11-01`]: "Toussaint",
+        [`${annee}-11-11`]: "Armistice",
+        [`${annee}-12-25`]: "Noël"
+    };
+
+    // Jours fériés mobiles
+    const lundiPaques = addDays(datePaques, 1);
+    const ascension = addDays(datePaques, 39);
+    const pentecote = addDays(datePaques, 50);
+
+    function format(d) {
+        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+    }
+
+    feries[format(lundiPaques)] = "Lundi de Pâques";
+    feries[format(ascension)] = "Ascension";
+    feries[format(pentecote)] = "Lundi de Pentecôte";
+
+    return feries;
+}
 // Génération du calendrier
 const moisNoms = ["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
 const calendrier = document.getElementById("calendrier");
+const joursFeries = joursFeriesFrance(annee);
+ const dateISO = `${annee}-${String(moisIndex+1).padStart(2,"0")}-${String(jour).padStart(2,"0")}`;
 
+if (joursFeries[dateISO]) {
+    caseDiv.classList.add("ferie");
+    contenuHeures = `<div class="heures">🎉 ${joursFeries[dateISO]}</div>`;
+}   
 function genererCalendrier() {
     calendrier.innerHTML = "";
 
@@ -135,15 +194,15 @@ function genererCalendrier() {
 
             if (t > 0 && b > 0) {
                 caseDiv.classList.add("mixte");
-                contenuHeures = `<div class="heures">${(t/60).toFixed(2)}h / ${(b/60).toFixed(2)}h</div>`;
+                contenuHeures = `<div class="heures">🛠️${(t/60).toFixed(2)}h / 🏢${(b/60).toFixed(2)}h</div>`;
                 joursTravailles++;
             } else if (t > 0) {
                 caseDiv.classList.add("terrain");
-                contenuHeures = `<div class="heures">${(t/60).toFixed(2)}h</div>`;
+                contenuHeures = `<div class="heures">🛠️${(t/60).toFixed(2)}h</div>`;
                 joursTravailles++;
             } else if (b > 0) {
                 caseDiv.classList.add("bureau");
-                contenuHeures = `<div class="heures">${(b/60).toFixed(2)}h</div>`;
+                contenuHeures = `<div class="heures">🏢${(b/60).toFixed(2)}h</div>`;
                 joursTravailles++;
             }
 
