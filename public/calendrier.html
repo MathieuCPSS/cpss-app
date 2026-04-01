@@ -107,7 +107,9 @@ h1 {
     position:absolute;
     left:-9999px;
     top:0;
-    width:210mm;
+    width:297mm;
+    min-height:210mm;
+    background:white;
 "></div>
 
 <script>
@@ -279,16 +281,16 @@ function genererVersionPDF() {
     const heuresTerrain = JSON.parse(localStorage.getItem("heuresTerrain_" + annee) || "{}");
     const heuresBureau = JSON.parse(localStorage.getItem("heuresBureau_" + annee) || "{}");
 
-    let html = `
-        <div style="font-family:Segoe UI; padding:20px;">
-            <h1 style="text-align:center; margin-bottom:20px;">Calendrier ${annee}</h1>
-            <div style="
-                display:grid;
-                grid-template-columns: repeat(2, 1fr);
-                gap:20px;
-            ">
-    `;
-
+let html = `
+<div style="width:297mm; min-height:210mm;">
+    <div style="font-family:Segoe UI; padding:20px;">
+        <h1 style="text-align:center; margin-bottom:20px;">Calendrier ${annee}</h1>
+        <div style="
+            display:grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap:20px;
+        ">
+`;
     for (let m = 0; m < 12; m++) {
         html += `
             <div style="border:1px solid #000; padding:10px; border-radius:4px;">
