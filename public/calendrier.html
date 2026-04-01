@@ -275,30 +275,31 @@ genererCalendrier();
 // VERSION PDF SOBRE – A4 PAYSAGE – 2 COLONNES × 6 LIGNES
 // -------------------------
 function genererVersionPDF() {
-    console.log("PDF: début génération");
     const annee = selectAnnee.value;
     const joursFeries = joursFeriesFrance(annee);
     const heuresTerrain = JSON.parse(localStorage.getItem("heuresTerrain_" + annee) || "{}");
     const heuresBureau = JSON.parse(localStorage.getItem("heuresBureau_" + annee) || "{}");
 
-let html = `
-<div style="width:297mm; min-height:210mm;">
-    <div style="font-family:Segoe UI; padding:20px;">
-        <h1 style="text-align:center; margin-bottom:20px;">Calendrier ${annee}</h1>
-        <div style="
-            display:grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap:20px;
-        ">
+    // WRAPPER A4 PAYSAGE
+    let html = `
+<div style="width:297mm; min-height:210mm; background:white; padding:20px; font-family:Segoe UI;">
+    <h1 style="text-align:center; margin-bottom:20px;">Calendrier ${annee}</h1>
+
+    <div style="
+        display:grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap:20px;
+    ">
 `;
+
     for (let m = 0; m < 12; m++) {
         html += `
-            <div style="border:1px solid #000; padding:10px; border-radius:4px;">
-                <h2 style="text-align:center; font-size:20px; margin:0 0 10px 0;">${moisNoms[m]}</h2>
-                <table style="width:100%; border-collapse:collapse; font-size:11px;">
-                    <tr>
-                        <th>L</th><th>M</th><th>M</th><th>J</th><th>V</th><th>S</th><th>D</th>
-                    </tr>
+        <div style="border:1px solid #000; padding:10px; border-radius:4px;">
+            <h2 style="text-align:center; font-size:20px; margin:0 0 10px 0;">${moisNoms[m]}</h2>
+            <table style="width:100%; border-collapse:collapse; font-size:11px;">
+                <tr>
+                    <th>L</th><th>M</th><th>M</th><th>J</th><th>V</th><th>S</th><th>D</th>
+                </tr>
         `;
 
         const date = new Date(annee, m, 1);
@@ -337,8 +338,12 @@ let html = `
         html += "</tr></table></div>";
     }
 
-    html += "</div></div>";
-console.log("PDF: HTML généré");
+    // FERMETURE PROPRE DU WRAPPER
+    html += `
+    </div>
+</div>
+`;
+
     document.getElementById("pdfContainer").innerHTML = html;
 }
 
