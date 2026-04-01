@@ -1353,5 +1353,42 @@ function modifierClient() {
   </div>
 </div>
 
+<script>
+// Convertit HH:MM en minutes
+function toMinutes(hm) {
+    if (!hm || !hm.includes(":")) return 0;
+    const [h, m] = hm.split(":").map(Number);
+    return h * 60 + m;
+}
+
+function calculerHeuresTerrain() {
+    const lignes = document.querySelectorAll(".ligne-saisie");
+
+    let heuresTerrain = {};
+    let joursTerrain = {};
+
+    lignes.forEach(ligne => {
+        const date = ligne.querySelector('input[type="date"]').value;
+        const debut = ligne.querySelector(".debut").value;
+        const pause = ligne.querySelector(".pause").value;
+        const fin = ligne.querySelector(".fin").value;
+
+        if (date && debut && fin) {
+            const minutes = toMinutes(fin) - toMinutes(debut) - toMinutes(pause);
+            if (minutes > 0) {
+                heuresTerrain[date] = minutes;
+                joursTerrain[date] = true;
+            }
+        }
+    });
+
+    localStorage.setItem("heuresTerrain", JSON.stringify(heuresTerrain));
+    localStorage.setItem("joursTerrain", JSON.stringify(joursTerrain));
+}
+
+// Recalcule automatiquement à chaque saisie
+document.addEventListener("input", calculerHeuresTerrain);
+</script>
+  
 </body>
 </html>
