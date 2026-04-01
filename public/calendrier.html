@@ -294,49 +294,85 @@ genererCalendrier();
 <script>
 async function exportPDF() {
 
-    // 1) Cloner le calendrier pour ne pas toucher à l’affichage réel
     const original = document.getElementById("calendrier");
-    const clone = original.cloneNode(true);
 
-    // 2) Stabilisation du clone pour html2canvas
-    clone.style.width = "1000px";              // largeur fixe
-    clone.style.background = "white";          // fond blanc
-    clone.style.transform = "scale(1)";        // pas de zoom parasite
-    clone.style.transformOrigin = "top left";  // point d’ancrage propre
+    // On récupère tous les blocs .mois (12 mois)
+    const mois = Array.from(original.querySelectorAll(".mois"));
 
-    // 3) Supprimer toutes les icônes (emoji)
-    clone.querySelectorAll("*").forEach(el => {
-        if (el.textContent.match(/[\u{1F300}-\u{1FAFF}]/u)) {
-            el.textContent = el.textContent.replace(/[\u{1F300}-\u{1FAFF}]/gu, "");
-        }
-    });
+    // On va créer des groupes de 3 mois
+    const groupes = [];
+    for (let i = 0; i < mois.length; i += 3) {
+        groupes.push(mois.slice(i, i + 3));
+    }
 
-    // 4) Conteneur invisible
-    const container = document.createElement("div");
-    container.style.position = "fixed";
-    container.style.left = "-9999px";
-    container.appendChild(clone);
-    document.body.appendChild(container);
-
-    // 5) Options PDF améliorées
+    // Options PDF
     const opt = {
         margin: 10,
         filename: `Calendrier_${annee}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { 
-            scale: 3,               // meilleure fidélité
+            scale: 3,
             useCORS: true,
-            letterRendering: true,  // stabilise les textes
-            logging: false
+            letterRendering: true
         },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
 
-    // 6) Génération PDF
-    await html2pdf().set(opt).from(clone).save();
+    const pdf = new jsPDF(opt.jsPDF);
 
-    // 7) Nettoyage
-    document.body.removeChild(container);
+    let firstPage = true;
+
+    for (const groupe of groupes) {
+
+        // 1) Créer un conteneur temporaire
+        const page = document.createElement("div");
+        page.style.width = "1000px";
+        page.style.background = "white";
+        page.style.display = "grid";
+        page.style.gridTemplateColumns = "repeat(3, 1fr)";
+        page.style.gap = "20px";
+        page.style.padding = "20px";
+
+        // 2) Ajouter les 3 mois clonés
+        groupe.forEach(moisDiv => {
+            const clone = moisDiv.cloneNode(true);
+
+            // Supprimer les emojis
+            clone.querySelectorAll("*").forEach(el => {
+                if (el.textContent.match(/[\u{1F300}-\u{1FAFF}]/u)) {
+                    el.textContent = el.textContent.replace(/[\u{1F300}-\u{1FAFF}]/gu, "");
+                }
+            });
+
+            page.appendChild(clone);
+        });
+
+        // 3) Ajouter la page hors écran
+        const container = document.createElement("div");
+        container.style.position = "fixed";
+        container.style.left = "-9999px";
+        container.appendChild(page);
+        document.body.appendChild(container);
+
+        // 4) Convertir en image
+        const canvas = await html2canvas(page, opt.html2canvas);
+        const imgData = canvas.toDataURL("image/jpeg", 0.98);
+
+        // 5) Ajouter au PDF
+        if (!firstPage) pdf.addPage();
+        firstPage = false;
+
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+
+        pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, pdfHeight);
+
+        // 6) Nettoyage
+        document.body.removeChild(container);
+    }
+
+    // 7) Sauvegarde finale
+    pdf.save(`Calendrier_${annee}.pdf`);
 }
 
 </script>
