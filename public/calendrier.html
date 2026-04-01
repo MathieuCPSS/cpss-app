@@ -81,29 +81,17 @@ h1 {
     font-weight: bold;
 }
 
-.case.terrain {
-    background: #d9f7d9;
-}
-
-.case.bureau {
-    background: #d9e8ff;
-}
-
-.case.mixte {
-    background: #fceec0;
-}
-
-.case.ferie {
-    background: #eeeeee;
-}
+.case.terrain { background: #d9f7d9; }
+.case.bureau { background: #d9e8ff; }
+.case.mixte { background: #fceec0; }
+.case.ferie { background: #eeeeee; }
 
 .heures {
     font-size: 11px;
     margin-top: 2px;
 }
-
 </style>
- 
+
 </head>
 
 <body>
@@ -125,6 +113,7 @@ h1 {
 <button onclick="exportPDF()" style="margin-left:10px; margin-bottom:20px;">📄 Export PDF</button>
 
 <div class="calendrier" id="calendrier"></div>
+
 <script>
 // ------------------------------
 // GESTION DE L'ANNÉE
@@ -132,7 +121,6 @@ h1 {
 const inputAnnee = document.getElementById("selectAnnee");
 let annee = parseInt(inputAnnee.value);
 
-// Quand l'année change → on recharge tout
 inputAnnee.addEventListener("change", () => {
     annee = parseInt(inputAnnee.value);
     genererCalendrier();
@@ -183,11 +171,11 @@ const moisNoms = ["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Ao
 const calendrier = document.getElementById("calendrier");
 
 function genererCalendrier() {
-        // --- IMPORT AUTOMATIQUE DES DONNÉES DU RAPPORT ---
+
+    // Import automatique
     const oldTerrain = JSON.parse(localStorage.getItem("heuresTerrain") || "{}");
     const oldBureau = JSON.parse(localStorage.getItem("heuresBureau") || "{}");
 
-    // Si l'ancien stockage contient des données → on les copie vers l'année
     if (Object.keys(oldTerrain).length > 0) {
         localStorage.setItem("heuresTerrain_" + annee, JSON.stringify(oldTerrain));
     }
@@ -195,6 +183,7 @@ function genererCalendrier() {
     if (Object.keys(oldBureau).length > 0) {
         localStorage.setItem("heuresBureau_" + annee, JSON.stringify(oldBureau));
     }
+
     calendrier.innerHTML = "";
 
     const feries = joursFeries(annee);
@@ -237,14 +226,12 @@ function genererCalendrier() {
             const t = heuresTerrain[dateStr] || 0;
             const b = heuresBureau[dateStr] || 0;
 
-            // Couleurs
             if (t > 0 && b > 0) caseDiv.classList.add("mixte");
             else if (t > 0) caseDiv.classList.add("terrain");
             else if (b > 0) caseDiv.classList.add("bureau");
 
             if (feries[dateStr]) caseDiv.classList.add("ferie");
 
-            // Affichage heures
             let contenuHeures = "";
             if (t > 0) contenuHeures += `<div class="heures">🛠️ ${(t/60).toFixed(2)}h</div>`;
             if (b > 0) contenuHeures += `<div class="heures">🏢 ${(b/60).toFixed(2)}h</div>`;
@@ -254,7 +241,6 @@ function genererCalendrier() {
 
             caseDiv.innerHTML = `<div class="num">${d}</div>${contenuHeures}`;
 
-            // Clic → prompt
             caseDiv.onclick = () => {
                 const saisie = prompt("Saisir les heures bureau :", "");
 
@@ -290,8 +276,12 @@ function genererCalendrier() {
 
 genererCalendrier();
 </script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<!-- Librairies propres -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+<!-- EXPORT PDF PROPRE -->
 <script>
 async function exportPDF() {
 
@@ -301,7 +291,6 @@ async function exportPDF() {
     const original = document.getElementById("calendrier");
     const mois = Array.from(original.querySelectorAll(".mois"));
 
-    // Groupes de 3 mois
     const groupes = [];
     for (let i = 0; i < mois.length; i += 3) {
         groupes.push(mois.slice(i, i + 3));
@@ -311,7 +300,6 @@ async function exportPDF() {
 
     for (const groupe of groupes) {
 
-        // Conteneur temporaire
         const page = document.createElement("div");
         page.style.width = "1000px";
         page.style.background = "white";
@@ -320,11 +308,9 @@ async function exportPDF() {
         page.style.gap = "20px";
         page.style.padding = "20px";
 
-        // Ajouter les 3 mois clonés
         groupe.forEach(moisDiv => {
             const clone = moisDiv.cloneNode(true);
 
-            // Supprimer les emojis
             clone.querySelectorAll("*").forEach(el => {
                 if (el.textContent.match(/[\u{1F300}-\u{1FAFF}]/u)) {
                     el.textContent = el.textContent.replace(/[\u{1F300}-\u{1FAFF}]/gu, "");
@@ -334,14 +320,12 @@ async function exportPDF() {
             page.appendChild(clone);
         });
 
-        // Ajouter hors écran
         const container = document.createElement("div");
         container.style.position = "fixed";
         container.style.left = "-9999px";
         container.appendChild(page);
         document.body.appendChild(container);
 
-        // Capture
         const canvas = await html2canvas(page, { scale: 3 });
         const imgData = canvas.toDataURL("image/jpeg", 0.98);
 
@@ -358,7 +342,7 @@ async function exportPDF() {
 
     pdf.save(`Calendrier_${annee}.pdf`);
 }
-
 </script>
+
 </body>
 </html>
