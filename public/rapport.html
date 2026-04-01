@@ -1367,8 +1367,13 @@ function calculerHeuresTerrain() {
     let heuresTerrain = {};
     let joursTerrain = {};
 
+    let heuresTrajet = {};   // ← NOUVEAU
+    let joursTrajet = {};    // ← NOUVEAU
+
     lignes.forEach(ligne => {
         const date = ligne.querySelector('input[type="date"]').value;
+
+        // --- Terrain ---
         const debut = ligne.querySelector(".debut").value;
         const pause = ligne.querySelector(".pause").value;
         const fin = ligne.querySelector(".fin").value;
@@ -1380,10 +1385,26 @@ function calculerHeuresTerrain() {
                 joursTerrain[date] = true;
             }
         }
+
+        // --- Trajet (NOUVEAU) ---
+        const trajet = ligne.querySelector(".temps-trajet")?.value;
+
+        if (date && trajet) {
+            const minutesTrajet = toMinutes(trajet);
+            if (minutesTrajet > 0) {
+                heuresTrajet[date] = minutesTrajet;
+                joursTrajet[date] = true;
+            }
+        }
     });
 
+    // Sauvegarde terrain
     localStorage.setItem("heuresTerrain", JSON.stringify(heuresTerrain));
     localStorage.setItem("joursTerrain", JSON.stringify(joursTerrain));
+
+    // Sauvegarde trajet (NOUVEAU)
+    localStorage.setItem("heuresTrajet", JSON.stringify(heuresTrajet));
+    localStorage.setItem("joursTrajet", JSON.stringify(joursTrajet));
 }
 
 // Recalcule automatiquement à chaque saisie
