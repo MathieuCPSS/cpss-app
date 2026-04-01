@@ -278,14 +278,14 @@ genererCalendrier();
 </script>
 
 <!-- Librairies propres -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
 <!-- EXPORT PDF PROPRE -->
 <script>
 async function exportPDF() {
 
-    const pdf = new jsPDF("p", "mm", "a4");
+    const { jsPDF } = window.jspdf;
 
     const original = document.getElementById("calendrier");
     const mois = Array.from(original.querySelectorAll(".mois"));
