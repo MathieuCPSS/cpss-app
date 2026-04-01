@@ -320,9 +320,7 @@ const { jsPDF } = window.jspdf;
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
 
-    // 🔥 Correction ici : récupération de jsPDF depuis html2pdf
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF(opt.jsPDF);
+
 
     let firstPage = true;
 
