@@ -13,7 +13,7 @@ body {
 
 h1 {
     text-align: center;
-    margin-bottom: 30px;
+    margin-bottom: 20px;
 }
 
 .calendrier {
@@ -84,6 +84,7 @@ h1 {
 
 <body>
 
+<!-- Barre du haut -->
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
     <span id="roleTag" style="font-size:12px;color:#888;margin-right:10px;"></span>
     <div>
@@ -93,6 +94,11 @@ h1 {
 </div>
 
 <h1>Calendrier Annuel – Suivi 214 jours</h1>
+
+<!-- Sélecteur d'année -->
+<div style="text-align:center; margin-bottom:20px;">
+    <select id="selectAnnee" style="padding:6px 10px; font-size:16px;"></select>
+</div>
 
 <div id="compteur" style="text-align:center; font-size:20px; margin-bottom:20px;"></div>
 
@@ -148,19 +154,34 @@ function joursFeriesFrance(annee) {
 }
 
 // -------------------------
+// SÉLECTEUR D’ANNÉE
+// -------------------------
+const selectAnnee = document.getElementById("selectAnnee");
+const anneeCourante = new Date().getFullYear();
+
+for (let a = anneeCourante - 1; a <= anneeCourante + 1; a++) {
+    const opt = document.createElement("option");
+    opt.value = a;
+    opt.textContent = a;
+    if (a === anneeCourante) opt.selected = true;
+    selectAnnee.appendChild(opt);
+}
+
+// -------------------------
 // GÉNÉRATION DU CALENDRIER
 // -------------------------
-const annee = new Date().getFullYear();
-const joursFeries = joursFeriesFrance(annee);
-
 const moisNoms = ["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
 const calendrier = document.getElementById("calendrier");
 
 function genererCalendrier() {
+    const annee = parseInt(selectAnnee.value);
+
     calendrier.innerHTML = "";
 
-    const heuresTerrain = JSON.parse(localStorage.getItem("heuresTerrain") || "{}");
-    const heuresBureau = JSON.parse(localStorage.getItem("heuresBureau") || "{}");
+    const heuresTerrain = JSON.parse(localStorage.getItem("heuresTerrain_" + annee) || "{}");
+    const heuresBureau = JSON.parse(localStorage.getItem("heuresBureau_" + annee) || "{}");
+
+    const joursFeries = joursFeriesFrance(annee);
 
     let joursTravailles = 0;
 
@@ -228,7 +249,7 @@ function genererCalendrier() {
 
                 if (["0","00","00:00","0h","0h00"].includes(clean)) {
                     delete heuresBureau[dateStr];
-                    localStorage.setItem("heuresBureau", JSON.stringify(heuresBureau));
+                    localStorage.setItem("heuresBureau_" + annee, JSON.stringify(heuresBureau));
                     genererCalendrier();
                     return;
                 }
@@ -236,7 +257,7 @@ function genererCalendrier() {
                 if (clean.includes(":")) {
                     const [h, m] = clean.split(":").map(Number);
                     heuresBureau[dateStr] = h*60 + m;
-                    localStorage.setItem("heuresBureau", JSON.stringify(heuresBureau));
+                    localStorage.setItem("heuresBureau_" + annee, JSON.stringify(heuresBureau));
                     genererCalendrier();
                 }
             };
@@ -251,6 +272,8 @@ function genererCalendrier() {
     document.getElementById("compteur").innerHTML =
         `Jours travaillés : ${joursTravailles} / 214<br>Jours restants : ${214 - joursTravailles}`;
 }
+
+selectAnnee.onchange = genererCalendrier;
 
 genererCalendrier();
 </script>
