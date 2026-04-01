@@ -370,35 +370,27 @@ async function exporterCalendrierPDF() {
 
     const imgData = canvas.toDataURL("image/jpeg", 1.0);
 
+    // Création PDF
     const pdf = new jsPDF("landscape", "mm", "a4");
-    const pageWidth = 297;
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
 
-    const imgWidth = pageWidth;
-    const imgHeight = canvas.height * (imgWidth / canvas.width);
+    // Taille image en mm
+    let imgWidth = pageWidth;
+    let imgHeight = canvas.height * (imgWidth / canvas.width);
 
-    const pdf = new jsPDF("landscape", "mm", "a4");
-const pageWidth = pdf.internal.pageSize.getWidth();
-const pageHeight = pdf.internal.pageSize.getHeight();
+    // Réduction si trop haut
+    if (imgHeight > pageHeight) {
+        const ratio = pageHeight / imgHeight;
+        imgWidth *= ratio;
+        imgHeight *= ratio;
+    }
 
-// Taille réelle de l'image en mm
-const imgWidth = pageWidth;
-const imgHeight = canvas.height * (imgWidth / canvas.width);
+    // Centrage
+    const x = (pageWidth - imgWidth) / 2;
+    const y = (pageHeight - imgHeight) / 2;
 
-// Si l'image dépasse la hauteur de la page, on réduit
-let finalWidth = imgWidth;
-let finalHeight = imgHeight;
-
-if (finalHeight > pageHeight) {
-    const ratio = pageHeight / finalHeight;
-    finalWidth *= ratio;
-    finalHeight *= ratio;
-}
-
-// Centrage horizontal
-const x = (pageWidth - finalWidth) / 2;
-const y = (pageHeight - finalHeight) / 2;
-
-pdf.addImage(imgData, "JPEG", x, y, finalWidth, finalHeight);
+    pdf.addImage(imgData, "JPEG", x, y, imgWidth, imgHeight);
 
     pdf.save(`Calendrier_${selectAnnee.value}.pdf`);
 }
