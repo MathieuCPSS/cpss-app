@@ -180,8 +180,23 @@ function joursFeries(annee) {
 // IMPORT TERRAIN DEPUIS RAPPORT
 // ------------------------------
 function chargerDepuisRapport() {
-    const data = JSON.parse(localStorage.getItem("rapportTerrain_" + annee) || "{}");
-    localStorage.setItem("heuresTerrain_" + annee, JSON.stringify(data));
+    // 1. Ancien stockage terrain
+    let oldTerrain = JSON.parse(localStorage.getItem("heuresTerrain") || "{}");
+
+    // 2. Ancien stockage bureau
+    let oldBureau = JSON.parse(localStorage.getItem("heuresBureau") || "{}");
+
+    // 3. Si rien → message
+    if (Object.keys(oldTerrain).length === 0 && Object.keys(oldBureau).length === 0) {
+        alert("Aucune donnée terrain/bureau trouvée dans l'ancien stockage.");
+        return;
+    }
+
+    // 4. Copie vers le stockage par année
+    localStorage.setItem("heuresTerrain_" + annee, JSON.stringify(oldTerrain));
+    localStorage.setItem("heuresBureau_" + annee, JSON.stringify(oldBureau));
+
+    // 5. Recharge le calendrier
     genererCalendrier();
 }
 
