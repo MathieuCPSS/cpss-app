@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>Calendrier Annuel - Suivi 214 jours</title>
+<title>Calendrier Annuel – 2 pages A4</title>
 
 <style>
 body {
@@ -16,61 +16,30 @@ h1 {
     margin-bottom: 20px;
 }
 
-.calendrier {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 25px;
-}
-
 .mois {
-    background: white;
-    padding: 15px;
-    border-radius: 10px;
-    box-shadow: 0 0 5px #ccc;
+    border: 1px solid #000;
+    padding: 10px;
+    border-radius: 4px;
 }
 
 .mois h2 {
     text-align: center;
-    font-family: "Caveat", cursive;
-    font-size: 26px;
-    margin-bottom: 10px;
+    font-size: 20px;
+    margin: 0 0 10px 0;
 }
 
-.jours {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    text-align: center;
-    font-weight: bold;
-    margin-bottom: 5px;
-}
-
-.case {
-    border: 1px solid #ddd;
-    min-height: 60px;
-    padding: 3px;
-    position: relative;
-    cursor: pointer;
-}
-
-.case .num {
-    font-weight: bold;
-}
-
-.case.terrain { background: #d9f7d9; }
-.case.bureau { background: #d9e8ff; }
-.case.mixte { background: #fceec0; }
-
-.heures {
+table {
+    width: 100%;
+    border-collapse: collapse;
     font-size: 11px;
-    margin-top: 2px;
 }
 
-.ferie {
-    background: #eee !important;
-    border: 1px solid #ccc;
-    color: #444;
-    font-weight: 600;
+th, td {
+    border: 1px solid #000;
+    padding: 3px;
+    text-align: center;
 }
+
 </style>
 
 <!-- Librairies PDF -->
@@ -81,15 +50,7 @@ h1 {
 
 <body>
 
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-    <span id="roleTag" style="font-size:12px;color:#888;margin-right:10px;"></span>
-    <div>
-        <button onclick="window.location.href='/menu.html'" style="background:#eee;border:none;padding:6px 12px;border-radius:4px;cursor:pointer;">🏠 Menu</button>
-        <button onclick="fetch('/api/logout',{method:'POST'}).then(()=>window.location.href='/')" style="background:#eee;border:none;padding:6px 12px;border-radius:4px;cursor:pointer;">🚪</button>
-    </div>
-</div>
-
-<h1>Calendrier Annuel – Suivi 214 jours</h1>
+<h1>Calendrier Annuel – Export PDF 2 pages</h1>
 
 <div style="text-align:center; margin-bottom:20px;">
     <select id="selectAnnee" style="padding:6px 10px; font-size:16px;"></select>
@@ -97,23 +58,27 @@ h1 {
 
 <div style="text-align:center; margin-bottom:20px;">
     <button onclick="exporterCalendrierPDF()" style="padding:8px 14px; font-size:16px; cursor:pointer;">
-        📄 Exporter en PDF
+        📄 Exporter en PDF (2 pages)
     </button>
 </div>
 
-<div id="compteur" style="text-align:center; font-size:20px; margin-bottom:20px;"></div>
-
-<div class="calendrier" id="calendrier"></div>
-
-<!-- Conteneur PDF invisible -->
-<div id="pdfContainer" style="
+<!-- Conteneurs PDF invisibles -->
+<div id="pdfPage1" style="
     position:absolute;
     left:-9999px;
     top:0;
     width:793px;
-    min-height:1122px;
-    height:auto;
     background:white;
+    padding:20px;
+"></div>
+
+<div id="pdfPage2" style="
+    position:absolute;
+    left:-9999px;
+    top:0;
+    width:793px;
+    background:white;
+    padding:20px;
 "></div>
 
 <script>
@@ -175,131 +140,25 @@ for (let a = anneeCourante - 1; a <= anneeCourante + 1; a++) {
     selectAnnee.appendChild(opt);
 }
 
-// -------------------------
-// CALENDRIER ÉCRAN
-// -------------------------
 const moisNoms = ["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
-const calendrier = document.getElementById("calendrier");
-
-function genererCalendrier() {
-    const annee = parseInt(selectAnnee.value);
-
-    calendrier.innerHTML = "";
-
-    const heuresTerrain = JSON.parse(localStorage.getItem("heuresTerrain_" + annee) || "{}");
-    const heuresBureau = JSON.parse(localStorage.getItem("heuresBureau_" + annee) || "{}");
-    const joursFeries = joursFeriesFrance(annee);
-
-    let joursTravailles = 0;
-
-    for (let m = 0; m < 12; m++) {
-        const divMois = document.createElement("div");
-        divMois.className = "mois";
-
-        divMois.innerHTML = `<h2>${moisNoms[m]}</h2>
-        <div class="jours">
-            <div>L</div><div>M</div><div>M</div><div>J</div><div>V</div><div>S</div><div>D</div>
-        </div>`;
-
-        const grid = document.createElement("div");
-        grid.style.display = "grid";
-        grid.style.gridTemplateColumns = "repeat(7, 1fr)";
-
-        const date = new Date(annee, m, 1);
-        const startDay = (date.getDay() + 6) % 7;
-
-        for (let i = 0; i < startDay; i++) grid.appendChild(document.createElement("div"));
-
-        const daysInMonth = new Date(annee, m+1, 0).getDate();
-
-        for (let d = 1; d <= daysInMonth; d++) {
-            const caseDiv = document.createElement("div");
-            caseDiv.className = "case";
-
-            const dateStr = `${annee}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
-
-            const t = heuresTerrain[dateStr] || 0;
-            const b = heuresBureau[dateStr] || 0;
-
-            let contenuHeures = "";
-
-            if (joursFeries[dateStr]) {
-                caseDiv.classList.add("ferie");
-                contenuHeures = `<div class="heures">🎉 ${joursFeries[dateStr]}</div>`;
-            }
-
-            if (t > 0 && b > 0) {
-                caseDiv.classList.add("mixte");
-                contenuHeures = `<div class="heures">🛠️${(t/60).toFixed(2)}h / 🏢${(b/60).toFixed(2)}h</div>`;
-                joursTravailles++;
-            } else if (t > 0) {
-                caseDiv.classList.add("terrain");
-                contenuHeures = `<div class="heures">🛠️${(t/60).toFixed(2)}h</div>`;
-                joursTravailles++;
-            } else if (b > 0) {
-                caseDiv.classList.add("bureau");
-                contenuHeures = `<div class="heures">🏢${(b/60).toFixed(2)}h</div>`;
-                joursTravailles++;
-            }
-
-            caseDiv.innerHTML = `<div class="num">${d}</div>${contenuHeures}`;
-
-            caseDiv.onclick = () => {
-                const saisie = prompt("Heures bureau (HH:MM) :", "");
-                if (!saisie) return;
-
-                const clean = saisie.trim();
-
-                if (["0","00","00:00","0h","0h00"].includes(clean)) {
-                    delete heuresBureau[dateStr];
-                } else if (clean.includes(":")) {
-                    const [h, m] = clean.split(":").map(Number);
-                    heuresBureau[dateStr] = h*60 + m;
-                }
-
-                localStorage.setItem("heuresBureau_" + annee, JSON.stringify(heuresBureau));
-                genererCalendrier();
-            };
-
-            grid.appendChild(caseDiv);
-        }
-
-        divMois.appendChild(grid);
-        calendrier.appendChild(divMois);
-    }
-
-    document.getElementById("compteur").innerHTML =
-        `Jours travaillés : ${joursTravailles} / 214<br>Jours restants : ${214 - joursTravailles}`;
-}
-
-selectAnnee.onchange = genererCalendrier;
-genererCalendrier();
 
 // -------------------------
-// VERSION PDF SOBRE – A4 PAYSAGE – 1 PAGE
+// GÉNÉRATION DES 2 PAGES PDF
 // -------------------------
-function genererVersionPDF() {
+function genererPagePDF(pageDiv, moisDebut, moisFin) {
     const annee = selectAnnee.value;
     const joursFeries = joursFeriesFrance(annee);
-    const heuresTerrain = JSON.parse(localStorage.getItem("heuresTerrain_" + annee) || "{}");
-    const heuresBureau = JSON.parse(localStorage.getItem("heuresBureau_" + annee) || "{}");
 
     let html = `
-<div style="width:1122px; min-height:793px; background:white; padding:20px; font-family:Segoe UI;">
-    <h1 style="text-align:center; margin-bottom:20px;">Calendrier ${annee}</h1>
+        <h1 style="text-align:center; margin-bottom:20px;">Calendrier ${annee}</h1>
+        <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:20px;">
+    `;
 
-    <div style="
-        display:grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap:20px;
-    ">
-`;
-
-    for (let m = 0; m < 12; m++) {
+    for (let m = moisDebut; m <= moisFin; m++) {
         html += `
-        <div style="border:1px solid #000; padding:10px; border-radius:4px;">
-            <h2 style="text-align:center; font-size:20px; margin:0 0 10px 0;">${moisNoms[m]}</h2>
-            <table style="width:100%; border-collapse:collapse; font-size:11px;">
+        <div class="mois">
+            <h2>${moisNoms[m]}</h2>
+            <table>
                 <tr>
                     <th>L</th><th>M</th><th>M</th><th>J</th><th>V</th><th>S</th><th>D</th>
                 </tr>
@@ -319,17 +178,11 @@ function genererVersionPDF() {
 
         for (let d = 1; d <= daysInMonth; d++) {
             const dateStr = `${annee}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
-            const t = heuresTerrain[dateStr] || 0;
-            const b = heuresBureau[dateStr] || 0;
 
             let contenu = d;
-
             if (joursFeries[dateStr]) contenu += " 🎉";
-            else if (t > 0 && b > 0) contenu += " 🛠️/🏢";
-            else if (t > 0) contenu += " 🛠️";
-            else if (b > 0) contenu += " 🏢";
 
-            html += `<td style="border:1px solid #000; padding:3px; text-align:center;">${contenu}</td>`;
+            html += `<td>${contenu}</td>`;
             col++;
 
             if (col === 7) {
@@ -341,57 +194,54 @@ function genererVersionPDF() {
         html += "</tr></table></div>";
     }
 
-    html += `
-    </div>
-</div>
-`;
+    html += "</div>";
 
-    document.getElementById("pdfContainer").innerHTML = html;
+    pageDiv.innerHTML = html;
 }
 
 // -------------------------
-// EXPORT PDF (html2canvas + jsPDF)
+// EXPORT PDF 2 PAGES
 // -------------------------
 async function exporterCalendrierPDF() {
-    console.log("PDF: génération via html2canvas + jsPDF");
-
     const { jsPDF } = window.jspdf;
 
-    genererVersionPDF();
+    const page1 = document.getElementById("pdfPage1");
+    const page2 = document.getElementById("pdfPage2");
 
-    const element = document.getElementById("pdfContainer");
+    genererPagePDF(page1, 0, 5);   // Janvier → Juin
+    genererPagePDF(page2, 6, 11);  // Juillet → Décembre
 
     await new Promise(r => setTimeout(r, 200));
 
-    const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: "#FFFFFF"
-    });
+    const canvas1 = await html2canvas(page1, { scale: 2, backgroundColor: "#FFFFFF" });
+    const canvas2 = await html2canvas(page2, { scale: 2, backgroundColor: "#FFFFFF" });
 
-    const imgData = canvas.toDataURL("image/jpeg", 1.0);
+    const img1 = canvas1.toDataURL("image/jpeg", 1.0);
+    const img2 = canvas2.toDataURL("image/jpeg", 1.0);
 
-    // Création PDF
     const pdf = new jsPDF("portrait", "mm", "a4");
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
 
-    // Taille image en mm
-    let imgWidth = pageWidth;
-    let imgHeight = canvas.height * (imgWidth / canvas.width);
+    function addImageToPDF(img, canvas) {
+        let w = pageWidth;
+        let h = canvas.height * (w / canvas.width);
 
-    // Réduction si trop haut
-    if (imgHeight > pageHeight) {
-        const ratio = pageHeight / imgHeight;
-        imgWidth *= ratio;
-        imgHeight *= ratio;
+        if (h > pageHeight) {
+            const ratio = pageHeight / h;
+            w *= ratio;
+            h *= ratio;
+        }
+
+        const x = (pageWidth - w) / 2;
+        const y = (pageHeight - h) / 2;
+
+        pdf.addImage(img, "JPEG", x, y, w, h);
     }
 
-    // Centrage
-    const x = (pageWidth - imgWidth) / 2;
-    const y = (pageHeight - imgHeight) / 2;
-
-    pdf.addImage(imgData, "JPEG", x, y, imgWidth, imgHeight);
+    addImageToPDF(img1, canvas1);
+    pdf.addPage();
+    addImageToPDF(img2, canvas2);
 
     pdf.save(`Calendrier_${selectAnnee.value}.pdf`);
 }
