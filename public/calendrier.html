@@ -101,6 +101,7 @@ h1 {
     font-size: 11px;
     margin-top: 2px;
 }
+   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script> 
 </style>
 </head>
 
@@ -292,22 +293,40 @@ genererCalendrier();
 
 <script>
 async function exportPDF() {
-    const { jsPDF } = window.jspdf;
 
-    const pdf = new jsPDF({
-        orientation: "portrait",
-        unit: "mm",
-        format: "a4"
+    // 1) Cloner le calendrier pour ne pas toucher à l’affichage réel
+    const original = document.getElementById("calendrier");
+    const clone = original.cloneNode(true);
+
+    // 2) Supprimer toutes les icônes (emoji) du clone
+    clone.querySelectorAll("*").forEach(el => {
+        if (el.textContent.match(/[\u{1F300}-\u{1FAFF}]/u)) {
+            el.textContent = el.textContent.replace(/[\u{1F300}-\u{1FAFF}]/gu, "");
+        }
     });
-pdf.setFont("Courier", "normal");
-    const heuresTerrain = JSON.parse(localStorage.getItem("heuresTerrain_" + annee) || "{}");
-    const heuresBureau = JSON.parse(localStorage.getItem("heuresBureau_" + annee) || "{}");
-    const feries = joursFeries(annee);
 
-    const moisNoms = ["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
+    // 3) Préparer un conteneur invisible pour le clone
+    const container = document.createElement("div");
+    container.style.position = "fixed";
+    container.style.left = "-9999px";
+    container.appendChild(clone);
+    document.body.appendChild(container);
 
-    let y = 20;
+    // 4) Options PDF
+    const opt = {
+        margin:       10,
+        filename:     `Calendrier_${annee}.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2, useCORS: true },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
 
+    // 5) Génération PDF
+    await html2pdf().set(opt).from(clone).save();
+
+    // 6) Nettoyage
+    document.body.removeChild(container);
+}
 function printMonth(pdf, m) {
     pdf.setFontSize(14);
     pdf.text(moisNoms[m] + " " + annee, 10, y);
