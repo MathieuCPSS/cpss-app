@@ -299,7 +299,7 @@ async function exportPDF() {
         unit: "mm",
         format: "a4"
     });
-
+pdf.setFont("Courier", "normal");
     const heuresTerrain = JSON.parse(localStorage.getItem("heuresTerrain_" + annee) || "{}");
     const heuresBureau = JSON.parse(localStorage.getItem("heuresBureau_" + annee) || "{}");
     const feries = joursFeries(annee);
