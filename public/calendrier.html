@@ -376,7 +376,29 @@ async function exporterCalendrierPDF() {
     const imgWidth = pageWidth;
     const imgHeight = canvas.height * (imgWidth / canvas.width);
 
-    pdf.addImage(imgData, "JPEG", 0, 0, imgWidth, imgHeight);
+    const pdf = new jsPDF("landscape", "mm", "a4");
+const pageWidth = pdf.internal.pageSize.getWidth();
+const pageHeight = pdf.internal.pageSize.getHeight();
+
+// Taille réelle de l'image en mm
+const imgWidth = pageWidth;
+const imgHeight = canvas.height * (imgWidth / canvas.width);
+
+// Si l'image dépasse la hauteur de la page, on réduit
+let finalWidth = imgWidth;
+let finalHeight = imgHeight;
+
+if (finalHeight > pageHeight) {
+    const ratio = pageHeight / finalHeight;
+    finalWidth *= ratio;
+    finalHeight *= ratio;
+}
+
+// Centrage horizontal
+const x = (pageWidth - finalWidth) / 2;
+const y = (pageHeight - finalHeight) / 2;
+
+pdf.addImage(imgData, "JPEG", x, y, finalWidth, finalHeight);
 
     pdf.save(`Calendrier_${selectAnnee.value}.pdf`);
 }
