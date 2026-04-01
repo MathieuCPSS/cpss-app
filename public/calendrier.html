@@ -73,6 +73,7 @@ h1 {
 }
 </style>
 
+<!-- Librairies PDF -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
@@ -95,7 +96,7 @@ h1 {
 </div>
 
 <div style="text-align:center; margin-bottom:20px;">
-    <button id="btnPDF" style="padding:8px 14px; font-size:16px; cursor:pointer;">
+    <button onclick="exporterCalendrierPDF()" style="padding:8px 14px; font-size:16px; cursor:pointer;">
         📄 Exporter en PDF
     </button>
 </div>
@@ -104,6 +105,7 @@ h1 {
 
 <div class="calendrier" id="calendrier"></div>
 
+<!-- Conteneur PDF invisible -->
 <div id="pdfContainer" style="
     position:absolute;
     left:-9999px;
@@ -273,24 +275,93 @@ selectAnnee.onchange = genererCalendrier;
 genererCalendrier();
 
 // -------------------------
-// VERSION PDF SOBRE – A4 PAYSAGE – 2 COLONNES × 6 LIGNES
+// VERSION PDF SOBRE – A4 PAYSAGE – 1 PAGE
 // -------------------------
+function genererVersionPDF() {
+    const annee = selectAnnee.value;
+    const joursFeries = joursFeriesFrance(annee);
+    const heuresTerrain = JSON.parse(localStorage.getItem("heuresTerrain_" + annee) || "{}");
+    const heuresBureau = JSON.parse(localStorage.getItem("heuresBureau_" + annee) || "{}");
 
-<script>
+    let html = `
+<div style="width:1122px; min-height:793px; background:white; padding:20px; font-family:Segoe UI;">
+    <h1 style="text-align:center; margin-bottom:20px;">Calendrier ${annee}</h1>
+
+    <div style="
+        display:grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap:20px;
+    ">
+`;
+
+    for (let m = 0; m < 12; m++) {
+        html += `
+        <div style="border:1px solid #000; padding:10px; border-radius:4px;">
+            <h2 style="text-align:center; font-size:20px; margin:0 0 10px 0;">${moisNoms[m]}</h2>
+            <table style="width:100%; border-collapse:collapse; font-size:11px;">
+                <tr>
+                    <th>L</th><th>M</th><th>M</th><th>J</th><th>V</th><th>S</th><th>D</th>
+                </tr>
+        `;
+
+        const date = new Date(annee, m, 1);
+        const startDay = (date.getDay() + 6) % 7;
+        const daysInMonth = new Date(annee, m+1, 0).getDate();
+
+        let col = 0;
+        html += "<tr>";
+
+        for (let i = 0; i < startDay; i++) {
+            html += "<td></td>";
+            col++;
+        }
+
+        for (let d = 1; d <= daysInMonth; d++) {
+            const dateStr = `${annee}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+            const t = heuresTerrain[dateStr] || 0;
+            const b = heuresBureau[dateStr] || 0;
+
+            let contenu = d;
+
+            if (joursFeries[dateStr]) contenu += " 🎉";
+            else if (t > 0 && b > 0) contenu += " 🛠️/🏢";
+            else if (t > 0) contenu += " 🛠️";
+            else if (b > 0) contenu += " 🏢";
+
+            html += `<td style="border:1px solid #000; padding:3px; text-align:center;">${contenu}</td>`;
+            col++;
+
+            if (col === 7) {
+                html += "</tr><tr>";
+                col = 0;
+            }
+        }
+
+        html += "</tr></table></div>";
+    }
+
+    html += `
+    </div>
+</div>
+`;
+
+    document.getElementById("pdfContainer").innerHTML = html;
+}
+
+// -------------------------
+// EXPORT PDF (html2canvas + jsPDF)
+// -------------------------
 async function exporterCalendrierPDF() {
     console.log("PDF: génération via html2canvas + jsPDF");
 
     const { jsPDF } = window.jspdf;
 
-    // 1) On génère la version PDF dans pdfContainer
-    genererVersionPDF(); // ta fonction existante, on la garde
+    genererVersionPDF();
 
     const element = document.getElementById("pdfContainer");
 
-    // 2) On force un petit délai pour que le DOM soit prêt
     await new Promise(r => setTimeout(r, 200));
 
-    // 3) Capture du contenu
     const canvas = await html2canvas(element, {
         scale: 2,
         useCORS: true,
@@ -299,26 +370,16 @@ async function exporterCalendrierPDF() {
 
     const imgData = canvas.toDataURL("image/jpeg", 1.0);
 
-    // Dimensions A4 paysage
     const pdf = new jsPDF("landscape", "mm", "a4");
     const pageWidth = 297;
-    const pageHeight = 210;
 
-    // Taille de l’image en mm
     const imgWidth = pageWidth;
     const imgHeight = canvas.height * (imgWidth / canvas.width);
 
-    // 4) Ajout dans le PDF
     pdf.addImage(imgData, "JPEG", 0, 0, imgWidth, imgHeight);
 
-    // 5) Téléchargement
     pdf.save(`Calendrier_${selectAnnee.value}.pdf`);
 }
-
-// -------------------------
-// EXPORT PDF
-// -------------------------
-<button onclick="exporterCalendrierPDF()">📄 Exporter en PDF</button>
 
 </script>
 
