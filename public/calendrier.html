@@ -120,8 +120,6 @@ h1 {
 
 <div id="compteur" style="text-align:center; font-size:20px; margin-bottom:20px;"></div>
 
-<button onclick="chargerDepuisRapport()" style="margin-bottom:20px;">🔄 Charger depuis rapport</button>
-
 <button onclick="exportPDF()" style="margin-left:10px; margin-bottom:20px;">📄 Export PDF</button>
 
 <div class="calendrier" id="calendrier"></div>
@@ -174,30 +172,6 @@ function joursFeries(annee) {
         [format(ascension)]: true,
         [format(pentecote)]: true
     };
-}
-
-// ------------------------------
-// IMPORT TERRAIN DEPUIS RAPPORT
-// ------------------------------
-function chargerDepuisRapport() {
-    // 1. Ancien stockage terrain
-    let oldTerrain = JSON.parse(localStorage.getItem("heuresTerrain") || "{}");
-
-    // 2. Ancien stockage bureau
-    let oldBureau = JSON.parse(localStorage.getItem("heuresBureau") || "{}");
-
-    // 3. Si rien → message
-    if (Object.keys(oldTerrain).length === 0 && Object.keys(oldBureau).length === 0) {
-        alert("Aucune donnée terrain/bureau trouvée dans l'ancien stockage.");
-        return;
-    }
-
-    // 4. Copie vers le stockage par année
-    localStorage.setItem("heuresTerrain_" + annee, JSON.stringify(oldTerrain));
-    localStorage.setItem("heuresBureau_" + annee, JSON.stringify(oldBureau));
-
-    // 5. Recharge le calendrier
-    genererCalendrier();
 }
 
 // ------------------------------
