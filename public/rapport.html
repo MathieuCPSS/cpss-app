@@ -1398,13 +1398,11 @@ function calculerHeuresTerrain() {
         }
     });
 
-    // Sauvegarde terrain
-    localStorage.setItem("heuresTerrain_", JSON.stringify(heuresTerrain));
-localStorage.setItem("joursTerrain_", JSON.stringify(joursTerrain));
+localStorage.setItem("heuresTerrain", JSON.stringify(heuresTerrain));
+localStorage.setItem("joursTerrain", JSON.stringify(joursTerrain));
 
-    // Sauvegarde trajet (NOUVEAU)
-   localStorage.setItem("heuresTrajet_", JSON.stringify(heuresTrajet));
-localStorage.setItem("joursTrajet_", JSON.stringify(joursTrajet));
+localStorage.setItem("heuresTrajet", JSON.stringify(heuresTrajet));
+localStorage.setItem("joursTrajet", JSON.stringify(joursTrajet));
 
 }
 
