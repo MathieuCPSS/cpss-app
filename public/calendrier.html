@@ -110,8 +110,8 @@ h1 {
     position:absolute;
     left:-9999px;
     top:0;
-    width:1122px;
-    min-height:793px;
+    width:793px;
+    height:1122px;
     background:white;
 "></div>
 
@@ -371,7 +371,7 @@ async function exporterCalendrierPDF() {
     const imgData = canvas.toDataURL("image/jpeg", 1.0);
 
     // Création PDF
-    const pdf = new jsPDF("landscape", "mm", "a4");
+    const pdf = new jsPDF("portrait", "mm", "a4");
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
 
