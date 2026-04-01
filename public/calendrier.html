@@ -144,13 +144,8 @@ h1 {
 // Génération du calendrier
 const moisNoms = ["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
 const calendrier = document.getElementById("calendrier");
+  const annee = new Date().getFullYear();
 const joursFeries = joursFeriesFrance(annee);
- const dateISO = `${annee}-${String(moisIndex+1).padStart(2,"0")}-${String(jour).padStart(2,"0")}`;
-
-if (joursFeries[dateISO]) {
-    caseDiv.classList.add("ferie");
-    contenuHeures = `<div class="heures">🎉 ${joursFeries[dateISO]}</div>`;
-}   
 function genererCalendrier() {
     calendrier.innerHTML = "";
 
@@ -186,7 +181,10 @@ function genererCalendrier() {
             caseDiv.className = "case";
 
             const dateStr = `${new Date().getFullYear()}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
-
+if (joursFeries[dateStr]) {
+    caseDiv.classList.add("ferie");
+    contenuHeures = `<div class="heures">🎉 ${joursFeries[dateStr]}</div>`;
+}
             const t = heuresTerrain[dateStr] || 0;
             const b = heuresBureau[dateStr] || 0;
 
