@@ -175,6 +175,7 @@ function genererCalendrier() {
     // Import automatique
     const oldTerrain = JSON.parse(localStorage.getItem("heuresTerrain") || "{}");
     const oldBureau = JSON.parse(localStorage.getItem("heuresBureau") || "{}");
+const oldTrajet = JSON.parse(localStorage.getItem("heuresTrajet") || "{}");
 
     if (Object.keys(oldTerrain).length > 0) {
         localStorage.setItem("heuresTerrain_" + annee, JSON.stringify(oldTerrain));
@@ -183,6 +184,10 @@ function genererCalendrier() {
     if (Object.keys(oldBureau).length > 0) {
         localStorage.setItem("heuresBureau_" + annee, JSON.stringify(oldBureau));
     }
+if (Object.keys(oldTrajet).length > 0) {
+    localStorage.setItem("heuresTrajet_" + annee, JSON.stringify(oldTrajet));
+}
+
 
     calendrier.innerHTML = "";
 
