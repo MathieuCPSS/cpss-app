@@ -289,6 +289,75 @@ h1 {
 <div class="calendrier" id="calendrier"></div>
 
 <script>
+   function genererVersionPDF() {
+    const annee = selectAnnee.value;
+
+    let html = `
+        <div style="font-family:Segoe UI; padding:20px;">
+            <h1 style="text-align:center; margin-bottom:20px;">Calendrier ${annee}</h1>
+            <div style="
+                display:grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap:20px;
+            ">
+    `;
+
+    // On regénère les 12 mois mais en format A4
+    for (let m = 0; m < 12; m++) {
+        html += `
+            <div style="border:1px solid #ccc; padding:10px; border-radius:8px;">
+                <h2 style="text-align:center; font-size:22px; margin:0 0 10px 0;">${moisNoms[m]}</h2>
+                <table style="width:100%; border-collapse:collapse; font-size:12px;">
+                    <tr>
+                        <th>L</th><th>M</th><th>M</th><th>J</th><th>V</th><th>S</th><th>D</th>
+                    </tr>
+        `;
+
+        const date = new Date(annee, m, 1);
+        const startDay = (date.getDay() + 6) % 7;
+        const daysInMonth = new Date(annee, m+1, 0).getDate();
+
+        let col = 0;
+        html += "<tr>";
+
+        for (let i = 0; i < startDay; i++) {
+            html += "<td></td>";
+            col++;
+        }
+
+        for (let d = 1; d <= daysInMonth; d++) {
+            const dateStr = `${annee}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+            const t = JSON.parse(localStorage.getItem("heuresTerrain_" + annee) || "{}")[dateStr] || 0;
+            const b = JSON.parse(localStorage.getItem("heuresBureau_" + annee) || "{}")[dateStr] || 0;
+
+            let contenu = d;
+
+            if (joursFeriesFrance(annee)[dateStr]) {
+                contenu += " 🎉";
+            } else if (t > 0 && b > 0) {
+                contenu += " 🛠️/🏢";
+            } else if (t > 0) {
+                contenu += " 🛠️";
+            } else if (b > 0) {
+                contenu += " 🏢";
+            }
+
+            html += `<td style="border:1px solid #ddd; padding:3px; text-align:center;">${contenu}</td>`;
+            col++;
+
+            if (col === 7) {
+                html += "</tr><tr>";
+                col = 0;
+            }
+        }
+
+        html += "</tr></table></div>";
+    }
+
+    html += "</div></div>";
+
+    document.getElementById("pdfContainer").innerHTML = html;
+} 
 // -------------------------
 // JOURS FÉRIÉS AUTOMATIQUES
 // -------------------------
@@ -444,18 +513,21 @@ function genererCalendrier() {
                     localStorage.setItem("heuresBureau_" + annee, JSON.stringify(heuresBureau));
                     genererCalendrier();
                 }
-                document.getElementById("btnPDF").onclick = () => {
-    const annee = selectAnnee.value;
+document.getElementById("btnPDF").onclick = () => {
+    genererVersionPDF();
 
-    const element = document.getElementById("calendrier");
+    const element = document.getElementById("pdfContainer");
 
     const opt = {
-        margin:       10,
-        filename:     `Calendrier_${annee}.pdf`,
-        image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2 },
-        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        margin: 5,
+        filename: `Calendrier_${selectAnnee.value}.pdf`,
+        image: { type: 'jpeg', quality: 1 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
+
+    html2pdf().set(opt).from(element).save();
+};
 
     html2pdf().set(opt).from(element).save();
 };
@@ -490,6 +562,6 @@ document.getElementById("btnPDF").onclick = () => {
 };
 genererCalendrier();
 </script>
-
+<div id="pdfContainer" style="display:none;"></div>
 </body>
 </html>
