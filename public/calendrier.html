@@ -292,7 +292,7 @@ selectAnnee.onchange = genererCalendrier;
 genererCalendrier();
 
 // -------------------------
-// VERSION PDF A4
+// VERSION PDF A4 PAYSAGE (2 colonnes × 6 lignes)
 // -------------------------
 function genererVersionPDF() {
     const annee = selectAnnee.value;
@@ -307,6 +307,9 @@ function genererVersionPDF() {
                 gap:20px;
             ">
     `;
+
+    const heuresTerrain = JSON.parse(localStorage.getItem("heuresTerrain_" + annee) || "{}");
+    const heuresBureau = JSON.parse(localStorage.getItem("heuresBureau_" + annee) || "{}");
 
     for (let m = 0; m < 12; m++) {
         html += `
@@ -329,9 +332,6 @@ function genererVersionPDF() {
             html += "<td></td>";
             col++;
         }
-
-        const heuresTerrain = JSON.parse(localStorage.getItem("heuresTerrain_" + annee) || "{}");
-        const heuresBureau = JSON.parse(localStorage.getItem("heuresBureau_" + annee) || "{}");
 
         for (let d = 1; d <= daysInMonth; d++) {
             const dateStr = `${annee}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
@@ -380,7 +380,7 @@ document.getElementById("btnPDF").onclick = () => {
         filename: `Calendrier_${selectAnnee.value}.pdf`,
         image: { type: 'jpeg', quality: 1 },
         html2canvas: { scale: 2 },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
     };
 
     html2pdf().set(opt).from(element).save();
