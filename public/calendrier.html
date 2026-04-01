@@ -286,6 +286,8 @@ genererCalendrier();
 async function exportPDF() {
 
     const { jsPDF } = window.jspdf;
+const pdf = new jsPDF("p", "mm", "a4");
+
 
     const original = document.getElementById("calendrier");
     const mois = Array.from(original.querySelectorAll(".mois"));
