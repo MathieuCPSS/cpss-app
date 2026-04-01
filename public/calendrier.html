@@ -268,6 +268,7 @@ genererCalendrier();
 // VERSION PDF SOBRE – A4 PAYSAGE – 2 COLONNES × 6 LIGNES
 // -------------------------
 function genererVersionPDF() {
+    console.log("PDF: début génération");
     const annee = selectAnnee.value;
     const joursFeries = joursFeriesFrance(annee);
     const heuresTerrain = JSON.parse(localStorage.getItem("heuresTerrain_" + annee) || "{}");
@@ -330,7 +331,7 @@ function genererVersionPDF() {
     }
 
     html += "</div></div>";
-
+console.log("PDF: HTML généré");
     document.getElementById("pdfContainer").innerHTML = html;
 }
 
@@ -349,7 +350,7 @@ document.getElementById("btnPDF").onclick = () => {
         html2canvas: { scale: 2 },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
     };
-
+console.log("PDF: lancement html2pdf");
     html2pdf().set(opt).from(element).save();
 };
 
