@@ -85,7 +85,7 @@ h1 {
 .case.bureau { background: #d9e8ff; }
 .case.mixte { background: #fceec0; }
 .case.ferie { background: #eeeeee; }
-
+.case.trajet { background: #ffe7c2; }
 .heures {
     font-size: 11px;
     margin-top: 2px;
@@ -190,7 +190,7 @@ function genererCalendrier() {
 
     const heuresTerrain = JSON.parse(localStorage.getItem("heuresTerrain_" + annee) || "{}");
     const heuresBureau = JSON.parse(localStorage.getItem("heuresBureau_" + annee) || "{}");
-
+const heuresTrajet = JSON.parse(localStorage.getItem("heuresTrajet_" + annee) || "{}");
     let joursTravailles = 0;
 
     for (let m = 0; m < 12; m++) {
@@ -225,16 +225,19 @@ function genererCalendrier() {
 
             const t = heuresTerrain[dateStr] || 0;
             const b = heuresBureau[dateStr] || 0;
+            const tr = heuresTrajet[dateStr] || 0;
 
-            if (t > 0 && b > 0) caseDiv.classList.add("mixte");
-            else if (t > 0) caseDiv.classList.add("terrain");
-            else if (b > 0) caseDiv.classList.add("bureau");
+            if (tr > 0 && t > 0) caseDiv.classList.add("mixte");      // trajet + terrain
+else if (tr > 0) caseDiv.classList.add("trajet");         // trajet seul
+else if (t > 0) caseDiv.classList.add("terrain");
+else if (b > 0) caseDiv.classList.add("bureau");
 
             if (feries[dateStr]) caseDiv.classList.add("ferie");
 
             let contenuHeures = "";
             if (t > 0) contenuHeures += `<div class="heures">🛠️ ${(t/60).toFixed(2)}h</div>`;
             if (b > 0) contenuHeures += `<div class="heures">🏢 ${(b/60).toFixed(2)}h</div>`;
+            if (tr > 0) contenuHeures += `<div class="heures">🚗 ${(tr/60).toFixed(2)}h</div>`;
             if (feries[dateStr]) contenuHeures += `<div class="heures">🎉</div>`;
 
             if (t > 0 || b > 0) joursTravailles++;
