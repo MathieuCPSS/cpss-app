@@ -74,14 +74,13 @@ h1 {
 </style>
 </head>
 <body>
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-  <h1 style="margin:0;">Calendrier</h1>
+
   <div>
     <span id="roleTag" style="font-size:12px;color:#888;margin-right:10px;"></span>
     <button onclick="window.location.href='/menu.html'" style="background:#eee;border:none;padding:6px 12px;border-radius:4px;cursor:pointer;">🏠 Menu</button>
     <button onclick="fetch('/api/logout',{method:'POST'}).then(()=>window.location.href='/')" style="background:#eee;border:none;padding:6px 12px;border-radius:4px;cursor:pointer;">🚪</button>
   </div>
-</div>
+
 <h1>Calendrier Annuel – Suivi 214 jours</h1>
 
 <div id="compteur" style="text-align:center; font-size:20px; margin-bottom:20px;"></div>
