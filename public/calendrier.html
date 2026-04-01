@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>Calendrier Annuel - Suivi 214 jours</title>
+
 <style>
 body {
     font-family: "Segoe UI", sans-serif;
@@ -71,21 +72,25 @@ h1 {
     font-size: 11px;
     margin-top: 2px;
 }
-  .ferie {
+
+.ferie {
     background: #ffe8a6 !important;
     border: 1px solid #e0b84d;
     color: #8a5a00;
     font-weight: 600;
-}  
+}
 </style>
 </head>
+
 <body>
 
-  <div>
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
     <span id="roleTag" style="font-size:12px;color:#888;margin-right:10px;"></span>
-    <button onclick="window.location.href='/menu.html'" style="background:#eee;border:none;padding:6px 12px;border-radius:4px;cursor:pointer;">🏠 Menu</button>
-    <button onclick="fetch('/api/logout',{method:'POST'}).then(()=>window.location.href='/')" style="background:#eee;border:none;padding:6px 12px;border-radius:4px;cursor:pointer;">🚪</button>
-  </div>
+    <div>
+        <button onclick="window.location.href='/menu.html'" style="background:#eee;border:none;padding:6px 12px;border-radius:4px;cursor:pointer;">🏠 Menu</button>
+        <button onclick="fetch('/api/logout',{method:'POST'}).then(()=>window.location.href='/')" style="background:#eee;border:none;padding:6px 12px;border-radius:4px;cursor:pointer;">🚪</button>
+    </div>
+</div>
 
 <h1>Calendrier Annuel – Suivi 214 jours</h1>
 
@@ -94,8 +99,10 @@ h1 {
 <div class="calendrier" id="calendrier"></div>
 
 <script>
-    function joursFeriesFrance(annee) {
-    // Calcul de la date de Pâques (algorithme de Meeus)
+// -------------------------
+// JOURS FÉRIÉS AUTOMATIQUES
+// -------------------------
+function joursFeriesFrance(annee) {
     let f = Math.floor,
         G = annee % 19,
         C = f(annee / 100),
@@ -114,7 +121,6 @@ h1 {
         return d;
     }
 
-    // Jours fériés fixes
     const feries = {
         [`${annee}-01-01`]: "Jour de l'an",
         [`${annee}-05-01`]: "Fête du Travail",
@@ -126,7 +132,6 @@ h1 {
         [`${annee}-12-25`]: "Noël"
     };
 
-    // Jours fériés mobiles
     const lundiPaques = addDays(datePaques, 1);
     const ascension = addDays(datePaques, 39);
     const pentecote = addDays(datePaques, 50);
@@ -141,11 +146,16 @@ h1 {
 
     return feries;
 }
-// Génération du calendrier
+
+// -------------------------
+// GÉNÉRATION DU CALENDRIER
+// -------------------------
+const annee = new Date().getFullYear();
+const joursFeries = joursFeriesFrance(annee);
+
 const moisNoms = ["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
 const calendrier = document.getElementById("calendrier");
-  const annee = new Date().getFullYear();
-const joursFeries = joursFeriesFrance(annee);
+
 function genererCalendrier() {
     calendrier.innerHTML = "";
 
@@ -167,29 +177,33 @@ function genererCalendrier() {
         grid.style.display = "grid";
         grid.style.gridTemplateColumns = "repeat(7, 1fr)";
 
-        const date = new Date(new Date().getFullYear(), m, 1);
+        const date = new Date(annee, m, 1);
         const startDay = (date.getDay() + 6) % 7;
 
         for (let i = 0; i < startDay; i++) {
             grid.appendChild(document.createElement("div"));
         }
 
-        const daysInMonth = new Date(new Date().getFullYear(), m+1, 0).getDate();
+        const daysInMonth = new Date(annee, m+1, 0).getDate();
 
         for (let d = 1; d <= daysInMonth; d++) {
             const caseDiv = document.createElement("div");
             caseDiv.className = "case";
 
-            const dateStr = `${new Date().getFullYear()}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
-if (joursFeries[dateStr]) {
-    caseDiv.classList.add("ferie");
-    contenuHeures = `<div class="heures">🎉 ${joursFeries[dateStr]}</div>`;
-}
+            const dateStr = `${annee}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+
             const t = heuresTerrain[dateStr] || 0;
             const b = heuresBureau[dateStr] || 0;
 
             let contenuHeures = "";
 
+            // JOURS FÉRIÉS
+            if (joursFeries[dateStr]) {
+                caseDiv.classList.add("ferie");
+                contenuHeures = `<div class="heures">🎉 ${joursFeries[dateStr]}</div>`;
+            }
+
+            // TERRAIN / BUREAU / MIXTE
             if (t > 0 && b > 0) {
                 caseDiv.classList.add("mixte");
                 contenuHeures = `<div class="heures">🛠️${(t/60).toFixed(2)}h / 🏢${(b/60).toFixed(2)}h</div>`;
@@ -206,29 +220,26 @@ if (joursFeries[dateStr]) {
 
             caseDiv.innerHTML = `<div class="num">${d}</div>${contenuHeures}`;
 
-          caseDiv.onclick = () => {
-    const saisie = prompt("Heures bureau (HH:MM) :", "");
+            caseDiv.onclick = () => {
+                const saisie = prompt("Heures bureau (HH:MM) :", "");
+                if (saisie === null) return;
 
-    if (saisie === null) return; // annuler
+                const clean = saisie.trim();
 
-    const clean = saisie.trim();
+                if (["0","00","00:00","0h","0h00"].includes(clean)) {
+                    delete heuresBureau[dateStr];
+                    localStorage.setItem("heuresBureau", JSON.stringify(heuresBureau));
+                    genererCalendrier();
+                    return;
+                }
 
-    // Si l'utilisateur tape 0, 00:00, 0h, etc. → on efface
-    if (clean === "0" || clean === "00" || clean === "00:00" || clean === "0h" || clean === "0h00") {
-        delete heuresBureau[dateStr];
-        localStorage.setItem("heuresBureau", JSON.stringify(heuresBureau));
-        genererCalendrier();
-        return;
-    }
-
-    // Sinon on enregistre normalement
-    if (clean.includes(":")) {
-        const [h, m] = clean.split(":").map(Number);
-        heuresBureau[dateStr] = h*60 + m;
-        localStorage.setItem("heuresBureau", JSON.stringify(heuresBureau));
-        genererCalendrier();
-    }
-};
+                if (clean.includes(":")) {
+                    const [h, m] = clean.split(":").map(Number);
+                    heuresBureau[dateStr] = h*60 + m;
+                    localStorage.setItem("heuresBureau", JSON.stringify(heuresBureau));
+                    genererCalendrier();
+                }
+            };
 
             grid.appendChild(caseDiv);
         }
