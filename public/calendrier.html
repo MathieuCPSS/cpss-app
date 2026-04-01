@@ -80,6 +80,7 @@ h1 {
     font-weight: 600;
 }
 </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>  
 </head>
 
 <body>
@@ -99,7 +100,11 @@ h1 {
 <div style="text-align:center; margin-bottom:20px;">
     <select id="selectAnnee" style="padding:6px 10px; font-size:16px;"></select>
 </div>
-
+<div style="text-align:center; margin-bottom:20px;">
+    <button id="btnPDF" style="padding:8px 14px; font-size:16px; cursor:pointer;">
+        📄 Exporter en PDF
+    </button>
+</div>
 <div id="compteur" style="text-align:center; font-size:20px; margin-bottom:20px;"></div>
 
 <div class="calendrier" id="calendrier"></div>
@@ -260,6 +265,21 @@ function genererCalendrier() {
                     localStorage.setItem("heuresBureau_" + annee, JSON.stringify(heuresBureau));
                     genererCalendrier();
                 }
+                document.getElementById("btnPDF").onclick = () => {
+    const annee = selectAnnee.value;
+
+    const element = document.getElementById("calendrier");
+
+    const opt = {
+        margin:       10,
+        filename:     `Calendrier_${annee}.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2 },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    html2pdf().set(opt).from(element).save();
+};
             };
 
             grid.appendChild(caseDiv);
