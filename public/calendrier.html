@@ -80,7 +80,10 @@ h1 {
     font-weight: 600;
 }
 </style>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>  
+
+<!-- html2pdf -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
 </head>
 
 <body>
@@ -100,264 +103,22 @@ h1 {
 <div style="text-align:center; margin-bottom:20px;">
     <select id="selectAnnee" style="padding:6px 10px; font-size:16px;"></select>
 </div>
+
+<!-- Export PDF -->
 <div style="text-align:center; margin-bottom:20px;">
     <button id="btnPDF" style="padding:8px 14px; font-size:16px; cursor:pointer;">
         📄 Exporter en PDF
     </button>
 </div>
+
 <div id="compteur" style="text-align:center; font-size:20px; margin-bottom:20px;"></div>
 
 <div class="calendrier" id="calendrier"></div>
 
-<script>
-// -------------------------
-// JOURS FÉRIÉS AUTOMATIQUES
-// -------------------------
-function joursFeriesFrance(annee) {
-    let f = Math.floor,
-        G = annee % 19,
-        C = f(annee / 100),
-        H = (C - f(C / 4) - f((8 * C + 13) / 25) + 19 * G + 15) % 30,
-        I = H - f(H / 28) * (1 - f(29 / (H + 1)) * f((21 - G) / 11)),
-        J = (annee + f(annee / 4) + I + 2 - C + f(C / 4)) % 7,
-        L = I - J,
-        moisPaques = 3 + f((L + 40) / 44),
-        jourPaques = L + 28 - 31 * f(moisPaques / 4);
-
-    const datePaques = new Date(annee, moisPaques - 1, jourPaques);
-
-    function addDays(date, days) {
-        let d = new Date(date);
-        d.setDate(d.getDate() + days);
-        return d;
-    }
-
-    const feries = {
-        [`${annee}-01-01`]: "Jour de l'an",
-        [`${annee}-05-01`]: "Fête du Travail",
-        [`${annee}-05-08`]: "Victoire 1945",
-        [`${annee}-07-14`]: "Fête Nationale",
-        [`${annee}-08-15`]: "Assomption",
-        [`${annee}-11-01`]: "Toussaint",
-        [`${annee}-11-11`]: "Armistice",
-        [`${annee}-12-25`]: "Noël"
-    };
-
-    const lundiPaques = addDays(datePaques, 1);
-    const ascension = addDays(datePaques, 39);
-    const pentecote = addDays(datePaques, 50);
-
-    function format(d) {
-        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
-    }
-
-    feries[format(lundiPaques)] = "Lundi de Pâques";
-    feries[format(ascension)] = "Ascension";
-    feries[format(pentecote)] = "Lundi de Pentecôte";
-
-    return feries;
-}
-
-// -------------------------
-// SÉLECTEUR D’ANNÉE
-// -------------------------
-const selectAnnee = document.getElementById("selectAnnee");
-const anneeCourante = new Date().getFullYear();
-
-for (let a = anneeCourante - 1; a <= anneeCourante + 1; a++) {
-    const opt = document.createElement("option");
-    opt.value = a;
-    opt.textContent = a;
-    if (a === anneeCourante) opt.selected = true;
-    selectAnnee.appendChild(opt);
-}
-
-// -------------------------
-// GÉNÉRATION DU CALENDRIER
-// -------------------------
-const moisNoms = ["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
-const calendrier = document.getElementById("calendrier");
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-<meta charset="UTF-8">
-<title>Calendrier Annuel - Suivi 214 jours</title>
-
-<style>
-body {
-    font-family: "Segoe UI", sans-serif;
-    background: #f7f7f7;
-    padding: 20px;
-}
-
-h1 {
-    text-align: center;
-    margin-bottom: 20px;
-}
-
-.calendrier {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 25px;
-}
-
-.mois {
-    background: white;
-    padding: 15px;
-    border-radius: 10px;
-    box-shadow: 0 0 5px #ccc;
-}
-
-.mois h2 {
-    text-align: center;
-    font-family: "Caveat", cursive;
-    font-size: 26px;
-    margin-bottom: 10px;
-}
-
-.jours {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    text-align: center;
-    font-weight: bold;
-    margin-bottom: 5px;
-}
-
-.case {
-    border: 1px solid #ddd;
-    min-height: 60px;
-    padding: 3px;
-    position: relative;
-    cursor: pointer;
-}
-
-.case .num {
-    font-weight: bold;
-}
-
-.case.terrain {
-    background: #d9f7d9;
-}
-
-.case.bureau {
-    background: #d9e8ff;
-}
-
-.case.mixte {
-    background: #fceec0;
-}
-
-.heures {
-    font-size: 11px;
-    margin-top: 2px;
-}
-
-.ferie {
-    background: #ffe8a6 !important;
-    border: 1px solid #e0b84d;
-    color: #8a5a00;
-    font-weight: 600;
-}
-</style>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>  
-</head>
-
-<body>
-
-<!-- Barre du haut -->
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-    <span id="roleTag" style="font-size:12px;color:#888;margin-right:10px;"></span>
-    <div>
-        <button onclick="window.location.href='/menu.html'" style="background:#eee;border:none;padding:6px 12px;border-radius:4px;cursor:pointer;">🏠 Menu</button>
-        <button onclick="fetch('/api/logout',{method:'POST'}).then(()=>window.location.href='/')" style="background:#eee;border:none;padding:6px 12px;border-radius:4px;cursor:pointer;">🚪</button>
-    </div>
-</div>
-
-<h1>Calendrier Annuel – Suivi 214 jours</h1>
-
-<!-- Sélecteur d'année -->
-<div style="text-align:center; margin-bottom:20px;">
-    <select id="selectAnnee" style="padding:6px 10px; font-size:16px;"></select>
-</div>
-<div style="text-align:center; margin-bottom:20px;">
-    <button id="btnPDF" style="padding:8px 14px; font-size:16px; cursor:pointer;">
-        📄 Exporter en PDF
-    </button>
-</div>
-<div id="compteur" style="text-align:center; font-size:20px; margin-bottom:20px;"></div>
-
-<div class="calendrier" id="calendrier"></div>
+<!-- Conteneur invisible pour la version PDF -->
+<div id="pdfContainer" style="display:none;"></div>
 
 <script>
-   function genererVersionPDF() {
-    const annee = selectAnnee.value;
-
-    let html = `
-        <div style="font-family:Segoe UI; padding:20px;">
-            <h1 style="text-align:center; margin-bottom:20px;">Calendrier ${annee}</h1>
-            <div style="
-                display:grid;
-                grid-template-columns: repeat(2, 1fr);
-                gap:20px;
-            ">
-    `;
-
-    // On regénère les 12 mois mais en format A4
-    for (let m = 0; m < 12; m++) {
-        html += `
-            <div style="border:1px solid #ccc; padding:10px; border-radius:8px;">
-                <h2 style="text-align:center; font-size:22px; margin:0 0 10px 0;">${moisNoms[m]}</h2>
-                <table style="width:100%; border-collapse:collapse; font-size:12px;">
-                    <tr>
-                        <th>L</th><th>M</th><th>M</th><th>J</th><th>V</th><th>S</th><th>D</th>
-                    </tr>
-        `;
-
-        const date = new Date(annee, m, 1);
-        const startDay = (date.getDay() + 6) % 7;
-        const daysInMonth = new Date(annee, m+1, 0).getDate();
-
-        let col = 0;
-        html += "<tr>";
-
-        for (let i = 0; i < startDay; i++) {
-            html += "<td></td>";
-            col++;
-        }
-
-        for (let d = 1; d <= daysInMonth; d++) {
-            const dateStr = `${annee}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
-            const t = JSON.parse(localStorage.getItem("heuresTerrain_" + annee) || "{}")[dateStr] || 0;
-            const b = JSON.parse(localStorage.getItem("heuresBureau_" + annee) || "{}")[dateStr] || 0;
-
-            let contenu = d;
-
-            if (joursFeriesFrance(annee)[dateStr]) {
-                contenu += " 🎉";
-            } else if (t > 0 && b > 0) {
-                contenu += " 🛠️/🏢";
-            } else if (t > 0) {
-                contenu += " 🛠️";
-            } else if (b > 0) {
-                contenu += " 🏢";
-            }
-
-            html += `<td style="border:1px solid #ddd; padding:3px; text-align:center;">${contenu}</td>`;
-            col++;
-
-            if (col === 7) {
-                html += "</tr><tr>";
-                col = 0;
-            }
-        }
-
-        html += "</tr></table></div>";
-    }
-
-    html += "</div></div>";
-
-    document.getElementById("pdfContainer").innerHTML = html;
-} 
 // -------------------------
 // JOURS FÉRIÉS AUTOMATIQUES
 // -------------------------
@@ -513,6 +274,102 @@ function genererCalendrier() {
                     localStorage.setItem("heuresBureau_" + annee, JSON.stringify(heuresBureau));
                     genererCalendrier();
                 }
+            };
+
+            grid.appendChild(caseDiv);
+        }
+
+        divMois.appendChild(grid);
+        calendrier.appendChild(divMois);
+    }
+
+    document.getElementById("compteur").innerHTML =
+        `Jours travaillés : ${joursTravailles} / 214<br>Jours restants : ${214 - joursTravailles}`;
+}
+
+selectAnnee.onchange = genererCalendrier;
+
+genererCalendrier();
+
+// -------------------------
+// VERSION PDF A4
+// -------------------------
+function genererVersionPDF() {
+    const annee = selectAnnee.value;
+    const joursFeries = joursFeriesFrance(annee);
+
+    let html = `
+        <div style="font-family:Segoe UI; padding:20px;">
+            <h1 style="text-align:center; margin-bottom:20px;">Calendrier ${annee}</h1>
+            <div style="
+                display:grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap:20px;
+            ">
+    `;
+
+    for (let m = 0; m < 12; m++) {
+        html += `
+            <div style="border:1px solid #ccc; padding:10px; border-radius:8px;">
+                <h2 style="text-align:center; font-size:22px; margin:0 0 10px 0;">${moisNoms[m]}</h2>
+                <table style="width:100%; border-collapse:collapse; font-size:12px;">
+                    <tr>
+                        <th>L</th><th>M</th><th>M</th><th>J</th><th>V</th><th>S</th><th>D</th>
+                    </tr>
+        `;
+
+        const date = new Date(annee, m, 1);
+        const startDay = (date.getDay() + 6) % 7;
+        const daysInMonth = new Date(annee, m+1, 0).getDate();
+
+        let col = 0;
+        html += "<tr>";
+
+        for (let i = 0; i < startDay; i++) {
+            html += "<td></td>";
+            col++;
+        }
+
+        const heuresTerrain = JSON.parse(localStorage.getItem("heuresTerrain_" + annee) || "{}");
+        const heuresBureau = JSON.parse(localStorage.getItem("heuresBureau_" + annee) || "{}");
+
+        for (let d = 1; d <= daysInMonth; d++) {
+            const dateStr = `${annee}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+            const t = heuresTerrain[dateStr] || 0;
+            const b = heuresBureau[dateStr] || 0;
+
+            let contenu = d;
+
+            if (joursFeries[dateStr]) {
+                contenu += " 🎉";
+            } else if (t > 0 && b > 0) {
+                contenu += " 🛠️/🏢";
+            } else if (t > 0) {
+                contenu += " 🛠️";
+            } else if (b > 0) {
+                contenu += " 🏢";
+            }
+
+            html += `<td style="border:1px solid #ddd; padding:3px; text-align:center;">${contenu}</td>`;
+            col++;
+
+            if (col === 7) {
+                html += "</tr><tr>";
+                col = 0;
+            }
+        }
+
+        html += "</tr></table></div>";
+    }
+
+    html += "</div></div>";
+
+    document.getElementById("pdfContainer").innerHTML = html;
+}
+
+// -------------------------
+// EXPORT PDF
+// -------------------------
 document.getElementById("btnPDF").onclick = () => {
     genererVersionPDF();
 
@@ -529,39 +386,7 @@ document.getElementById("btnPDF").onclick = () => {
     html2pdf().set(opt).from(element).save();
 };
 
-    html2pdf().set(opt).from(element).save();
-};
-            };
-
-            grid.appendChild(caseDiv);
-        }
-
-        divMois.appendChild(grid);
-        calendrier.appendChild(divMois);
-    }
-
-    document.getElementById("compteur").innerHTML =
-        `Jours travaillés : ${joursTravailles} / 214<br>Jours restants : ${214 - joursTravailles}`;
-}
-
-selectAnnee.onchange = genererCalendrier;
-document.getElementById("btnPDF").onclick = () => {
-    const annee = selectAnnee.value;
-
-    const element = document.getElementById("calendrier");
-
-    const opt = {
-        margin:       10,
-        filename:     `Calendrier_${annee}.pdf`,
-        image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2 },
-        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-    };
-
-    html2pdf().set(opt).from(element).save();
-};
-genererCalendrier();
 </script>
-<div id="pdfContainer" style="display:none;"></div>
+
 </body>
 </html>
