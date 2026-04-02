@@ -145,8 +145,17 @@ async function loadRapports() {
     return local ? JSON.parse(local) : null;
   }
 
-  async function saveRapport(key, data) {
+async function saveRapport(key, data) {
+
+    // 🔥 AJOUT : on embarque les données du calendrier dans le rapport
+    data._joursTerrain  = JSON.parse(localStorage.getItem("joursTerrain")  || "{}");
+    data._joursTrajet   = JSON.parse(localStorage.getItem("joursTrajet")   || "{}");
+    data._heuresTerrain = JSON.parse(localStorage.getItem("heuresTerrain") || "{}");
+    data._heuresTrajet  = JSON.parse(localStorage.getItem("heuresTrajet")  || "{}");
+
+    // 🔥 Sauvegarde locale (inchangée)
     localStorage.setItem('rapportCPSS_' + key, JSON.stringify(data));
+
     await checkOnline();
     if (_online) {
       try {
@@ -163,7 +172,7 @@ async function loadRapports() {
     }
     showStatus('💾 Rapport sauvegardé localement (hors-ligne)', '#e65100');
     return false;
-  }
+}
 
   async function deleteRapport(key) {
     localStorage.removeItem('rapportCPSS_' + key);
