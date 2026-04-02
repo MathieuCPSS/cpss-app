@@ -931,17 +931,17 @@ async function supprimerRapport() {
 
   console.log("DONNEES PASSEES AU NETTOYAGE :", donnees);
 
-  // Nettoyage du calendrier
+  // 🔥 Nettoyage du calendrier
   try {
     nettoyerCalendrierPourRapport(donnees);
   } catch (e) {
     console.error("Erreur nettoyage calendrier :", e);
   }
 
-  // Suppression locale
+  // 🔥 Suppression locale
   localStorage.removeItem('rapportCPSS_' + cle);
 
-  // Tentative de suppression serveur
+  // 🔥 Tentative de suppression serveur
   try {
     const r = await fetch('/api/rapports/' + encodeURIComponent(cle), {
       method: 'DELETE'
@@ -955,7 +955,7 @@ async function supprimerRapport() {
     alert('🗑️ Rapport supprimé localement (hors-ligne)');
   }
 
-  // Rafraîchir la liste
+  // 🔥 Rafraîchir la liste
   if (typeof rafraichirListe === 'function') {
     rafraichirListe();
   }
@@ -964,33 +964,26 @@ async function supprimerRapport() {
 function nettoyerCalendrierPourRapport(d) {
   if (!d) return;
 
-  // Charger l'état actuel du calendrier
   let joursTerrain   = JSON.parse(localStorage.getItem("joursTerrain")   || "{}");
   let joursTrajet    = JSON.parse(localStorage.getItem("joursTrajet")    || "{}");
   let heuresTerrain  = JSON.parse(localStorage.getItem("heuresTerrain")  || "{}");
   let heuresTrajet   = JSON.parse(localStorage.getItem("heuresTrajet")   || "{}");
 
-  // Supprimer les jours terrain
-  Object.keys(d._joursTerrain || {}).forEach(date => {
-    delete joursTerrain[date];
+  // On parcourt toutes les valeurs du rapport
+  Object.values(d).forEach(val => {
+
+    // Si la valeur ressemble à une date YYYY-MM-DD
+    if (typeof val === "string" && /^\d{4}-\d{2}-\d{2}$/.test(val)) {
+
+      // 🔥 On supprime ce jour du calendrier
+      delete joursTerrain[val];
+      delete joursTrajet[val];
+      delete heuresTerrain[val];
+      delete heuresTrajet[val];
+    }
   });
 
-  // Supprimer les jours trajet
-  Object.keys(d._joursTrajet || {}).forEach(date => {
-    delete joursTrajet[date];
-  });
-
-  // Supprimer les heures terrain
-  Object.keys(d._heuresTerrain || {}).forEach(date => {
-    delete heuresTerrain[date];
-  });
-
-  // Supprimer les heures trajet
-  Object.keys(d._heuresTrajet || {}).forEach(date => {
-    delete heuresTrajet[date];
-  });
-
-  // Sauvegarder l'état nettoyé
+  // On sauvegarde l'état nettoyé
   localStorage.setItem("joursTerrain",   JSON.stringify(joursTerrain));
   localStorage.setItem("joursTrajet",    JSON.stringify(joursTrajet));
   localStorage.setItem("heuresTerrain",  JSON.stringify(heuresTerrain));
