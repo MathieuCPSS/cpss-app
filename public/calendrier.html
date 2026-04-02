@@ -171,28 +171,21 @@ const moisNoms = ["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Ao
 const calendrier = document.getElementById("calendrier");
 
 function genererCalendrier() {
+    // 🔥 Nettoyage une fois pour toutes des anciennes clés suffixées
+    Object.keys(localStorage).forEach(k => {
+        if (k.startsWith("heuresTerrain_") || k.startsWith("heuresTrajet_")) {
+            localStorage.removeItem(k);
+        }
+    });
 
-    // Import automatique (terrain + trajet uniquement)
-    const oldTerrain = JSON.parse(localStorage.getItem("heuresTerrain") || "{}");
-    const oldTrajet = JSON.parse(localStorage.getItem("heuresTrajet") || "{}");
-
-    if (Object.keys(oldTerrain).length > 0) {
-        localStorage.setItem("heuresTerrain_" + annee, JSON.stringify(oldTerrain));
-    }
-
-    if (Object.keys(oldTrajet).length > 0) {
-        localStorage.setItem("heuresTrajet_" + annee, JSON.stringify(oldTrajet));
-    }
-
-    // Bureau : uniquement manuel → pas d'import auto
-    const heuresBureau = JSON.parse(localStorage.getItem("heuresBureau_" + annee) || "{}");
+    // On lit directement les données officielles
+    const heuresTerrain = JSON.parse(localStorage.getItem("heuresTerrain") || "{}");
+    const heuresTrajet  = JSON.parse(localStorage.getItem("heuresTrajet")  || "{}");
+    const heuresBureau  = JSON.parse(localStorage.getItem("heuresBureau_" + annee) || "{}");
 
     calendrier.innerHTML = "";
 
     const feries = joursFeries(annee);
-
-    const heuresTerrain = JSON.parse(localStorage.getItem("heuresTerrain_" + annee) || "{}");
-    const heuresTrajet = JSON.parse(localStorage.getItem("heuresTrajet_" + annee) || "{}");
 
     let joursTravailles = 0;
 
@@ -226,31 +219,27 @@ function genererCalendrier() {
 
             const dateStr = `${annee}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
 
-            const t = heuresTerrain[dateStr] || 0;
-            const b = heuresBureau[dateStr] || 0;
-            const tr = heuresTrajet[dateStr] || 0;
+            const t  = heuresTerrain[dateStr] || 0;
+            const b  = heuresBureau[dateStr]  || 0;
+            const tr = heuresTrajet[dateStr]  || 0;
 
-            // Couleurs
             if (tr > 0 && t > 0) caseDiv.classList.add("mixte");
-            else if (tr > 0) caseDiv.classList.add("trajet");
-            else if (t > 0) caseDiv.classList.add("terrain");
-            else if (b > 0) caseDiv.classList.add("bureau");
+            else if (tr > 0)     caseDiv.classList.add("trajet");
+            else if (t > 0)      caseDiv.classList.add("terrain");
+            else if (b > 0)      caseDiv.classList.add("bureau");
 
             if (feries[dateStr]) caseDiv.classList.add("ferie");
 
-            // Contenu heures
             let contenuHeures = "";
-            if (t > 0) contenuHeures += `<div class="heures">🛠️ ${(t/60).toFixed(2)}h</div>`;
+            if (t  > 0) contenuHeures += `<div class="heures">🛠️ ${(t/60).toFixed(2)}h</div>`;
             if (tr > 0) contenuHeures += `<div class="heures">🚗 ${(tr/60).toFixed(2)}h</div>`;
-            if (b > 0) contenuHeures += `<div class="heures">🏢 ${(b/60).toFixed(2)}h</div>`;
+            if (b  > 0) contenuHeures += `<div class="heures">🏢 ${(b/60).toFixed(2)}h</div>`;
             if (feries[dateStr]) contenuHeures += `<div class="heures">🎉</div>`;
 
-            // Jours travaillés = terrain uniquement
             if (t > 0) joursTravailles++;
 
             caseDiv.innerHTML = `<div class="num">${d}</div>${contenuHeures}`;
 
-            // Saisie manuelle bureau (on garde)
             caseDiv.onclick = () => {
                 const saisie = prompt("Saisir les heures bureau :", "");
 
