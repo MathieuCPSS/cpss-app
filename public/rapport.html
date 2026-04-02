@@ -941,7 +941,7 @@ nettoyerCalendrierPourRapport(donnees);
     alert('Rapport supprimé (stockage local).');
   }
 }
-
+console.log("DONNEES PASSEES AU NETTOYAGE :", donnees);
 function nettoyerCalendrierPourRapport(donnees) {
   const annee = donnees['_save_annee'];
   if (!annee) return;
