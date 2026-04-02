@@ -175,15 +175,11 @@ function genererCalendrier() {
     // Import automatique
     const oldTerrain = JSON.parse(localStorage.getItem("heuresTerrain") || "{}");
     const oldBureau = JSON.parse(localStorage.getItem("heuresBureau") || "{}");
-const oldTrajet = JSON.parse(localStorage.getItem("heuresTrajet") || "{}");
 
     if (Object.keys(oldTerrain).length > 0) {
         localStorage.setItem("heuresTerrain_" + annee, JSON.stringify(oldTerrain));
     }
 
-    if (Object.keys(oldBureau).length > 0) {
-        localStorage.setItem("heuresBureau_" + annee, JSON.stringify(oldBureau));
-    }
 if (Object.keys(oldTrajet).length > 0) {
     localStorage.setItem("heuresTrajet_" + annee, JSON.stringify(oldTrajet));
 }
@@ -195,7 +191,6 @@ if (Object.keys(oldTrajet).length > 0) {
 
     const heuresTerrain = JSON.parse(localStorage.getItem("heuresTerrain_" + annee) || "{}");
     const heuresBureau = JSON.parse(localStorage.getItem("heuresBureau_" + annee) || "{}");
-const heuresTrajet = JSON.parse(localStorage.getItem("heuresTrajet_" + annee) || "{}");
     let joursTravailles = 0;
 
     for (let m = 0; m < 12; m++) {
@@ -235,13 +230,12 @@ const heuresTrajet = JSON.parse(localStorage.getItem("heuresTrajet_" + annee) ||
             if (tr > 0 && t > 0) caseDiv.classList.add("mixte");      // trajet + terrain
 else if (tr > 0) caseDiv.classList.add("trajet");         // trajet seul
 else if (t > 0) caseDiv.classList.add("terrain");
-else if (b > 0) caseDiv.classList.add("bureau");
+
 
             if (feries[dateStr]) caseDiv.classList.add("ferie");
 
             let contenuHeures = "";
             if (t > 0) contenuHeures += `<div class="heures">🛠️ ${(t/60).toFixed(2)}h</div>`;
-            if (b > 0) contenuHeures += `<div class="heures">🏢 ${(b/60).toFixed(2)}h</div>`;
             if (tr > 0) contenuHeures += `<div class="heures">🚗 ${(tr/60).toFixed(2)}h</div>`;
             if (feries[dateStr]) contenuHeures += `<div class="heures">🎉</div>`;
 
