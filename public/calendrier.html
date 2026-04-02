@@ -95,88 +95,68 @@ h1 {
 <style>
 /* Thème sombre (affichage écran uniquement) */
 @media screen {
-  table, th, td {
-      background-color: #2a2a2a !important;
-      color: #ffffff !important;
-  }
-}
-    @media screen {
 
-  /* Toute la zone basse (no-print) passe en sombre */
-  .no-print {
-      background-color: #1e1e1e !important;
-      color: #ffffff !important;
-      border-color: #444 !important;
-  }
-
-  /* Les boîtes internes */
-  .no-print div {
-      background-color: #2a2a2a !important;
-      color: #ffffff !important;
-      border-color: #555 !important;
-  }
-
-  /* Les inputs et selects dans la zone basse */
-  .no-print input,
-  .no-print select {
-      background-color: #333 !important;
-      color: #ffffff !important;
-      border: 1px solid #555 !important;
-  }
-
-  /* Les boutons */
-  .no-print button {
-      background-color: #3a3a3a !important;
-      color: #ffffff !important;
-      border: 1px solid #555 !important;
-  }
-
-  .no-print button:hover {
-      background-color: #505050 !important;
-  }
-}
+  /* Fond général */
   body {
-      background: #1e1e1e;
-      color: #e0e0e0;
+      background: #1e1e1e !important;
+      color: #ffffff !important;
   }
 
-  .a4-page {
-      background: #2a2a2a;
-      box-shadow: 0 0 10px rgba(0,0,0,0.6);
+  /* Conteneur des mois */
+  .mois {
+      background: #2a2a2a !important;
+      color: #ffffff !important;
+      box-shadow: 0 0 5px #000 !important;
+      border: 1px solid #444 !important;
   }
 
-  input, select, textarea {
-      background: #333;
-      color: #e0e0e0;
-      border: 1px solid #555;
+  /* Titres des mois */
+  .mois h2 {
+      color: #ffffff !important;
   }
 
-  #descriptif {
-      background: #333;
-      color: #e0e0e0;
-      border: 1px solid #555;
+  /* Jours de la semaine */
+  .jours {
+      color: #ffffff !important;
   }
 
-  button {
-      background: #3a3a3a;
-      color: #e0e0e0;
-      border: 1px solid #555;
+  /* Cases du calendrier */
+  .case {
+      background: #2a2a2a !important;
+      color: #ffffff !important;
+      border: 1px solid #444 !important;
   }
 
-  button:hover {
-      background: #505050;
+  /* Numéro du jour */
+  .case .num {
+      color: #ffffff !important;
   }
 
-  table {
-      background: #2a2a2a;
-      color: #e0e0e0;
+  /* États spéciaux (terrain, bureau, mixte, etc.) */
+  .case.terrain { background: #335533 !important; }
+  .case.bureau  { background: #2f3f55 !important; }
+  .case.mixte   { background: #5a4a22 !important; }
+  .case.ferie   { background: #555555 !important; }
+  .case.trajet  { background: #5a3f22 !important; }
+
+  /* Heures affichées dans les cases */
+  .heures {
+      color: #dddddd !important;
   }
 
-  th, td {
-      border: 1px solid #444;
+  /* Header */
+  header button {
+      background: #333 !important;
+      color: #fff !important;
+      border: 1px solid #555 !important;
+  }
+
+  #anneeContainer input {
+      background: #333 !important;
+      color: #fff !important;
+      border: 1px solid #555 !important;
   }
 }
-</style>
     
 </head>
 
