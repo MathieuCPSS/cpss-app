@@ -953,31 +953,29 @@ function nettoyerCalendrierPourRapport(donnees) {
   const heuresTerrain = JSON.parse(localStorage.getItem(terrainKey) || '{}');
   const heuresTrajet  = JSON.parse(localStorage.getItem(trajetKey)  || '{}');
 
-  // 🔥 On charge aussi les tableaux de jours (couleurs)
-  let joursTerrain = JSON.parse(localStorage.getItem('joursTerrain') || '[]');
-  let joursTrajet  = JSON.parse(localStorage.getItem('joursTrajet')  || '[]');
+  // 🔥 Clés correctes pour les couleurs
+  const joursTerrainKey = 'joursTerrain_' + annee;
+  const joursTrajetKey  = 'joursTrajet_' + annee;
 
-  // Vérifier que le rapport contient bien des jours
+  let joursTerrain = JSON.parse(localStorage.getItem(joursTerrainKey) || '[]');
+  let joursTrajet  = JSON.parse(localStorage.getItem(joursTrajetKey)  || '[]');
+
   if (!donnees.jours || !Array.isArray(donnees.jours)) return;
 
-  // Parcourir les jours du rapport
   donnees.jours.forEach(j => {
     const date = j.date;
 
-    // Supprimer les heures
     delete heuresTerrain[date];
     delete heuresTrajet[date];
 
-    // Supprimer les marquages de couleur
     joursTerrain = joursTerrain.filter(d => d !== date);
     joursTrajet  = joursTrajet.filter(d => d !== date);
   });
 
-  // Réécrire les données nettoyées
   localStorage.setItem(terrainKey, JSON.stringify(heuresTerrain));
   localStorage.setItem(trajetKey,  JSON.stringify(heuresTrajet));
-  localStorage.setItem('joursTerrain', JSON.stringify(joursTerrain));
-  localStorage.setItem('joursTrajet',  JSON.stringify(joursTrajet));
+  localStorage.setItem(joursTerrainKey, JSON.stringify(joursTerrain));
+  localStorage.setItem(joursTrajetKey,  JSON.stringify(joursTrajet));
 }
 
 
