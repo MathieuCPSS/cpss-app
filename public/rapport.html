@@ -953,17 +953,15 @@ function nettoyerCalendrierPourRapport(donnees) {
   const heuresTerrain = JSON.parse(localStorage.getItem(terrainKey) || '{}');
   const heuresTrajet  = JSON.parse(localStorage.getItem(trajetKey)  || '{}');
 
-  // Parcourir toutes les entrées du rapport
-  for (const key in donnees) {
-    const val = donnees[key];
+  // Vérifier que le rapport contient bien des jours
+  if (!donnees.jours || !Array.isArray(donnees.jours)) return;
 
-    // Si la valeur ressemble à une date ISO (YYYY-MM-DD)
-    if (typeof val === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(val)) {
-      // Supprimer les heures terrain/trajet pour cette date
-      delete heuresTerrain[val];
-      delete heuresTrajet[val];
-    }
-  }
+  // Parcourir les jours du rapport
+  donnees.jours.forEach(j => {
+    const date = j.date;
+    delete heuresTerrain[date];
+    delete heuresTrajet[date];
+  });
 
   // Réécrire les données nettoyées
   localStorage.setItem(terrainKey, JSON.stringify(heuresTerrain));
