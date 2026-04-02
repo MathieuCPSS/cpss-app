@@ -221,13 +221,10 @@
 /* Thème sombre (affichage écran uniquement) */
 @media screen {
 
-  /* Zones à fond clair → texte noir */
-  table td[style*="background: white"],
-  table td[style*="background:#fff"],
-  table td[style*="background: #fff"],
-  table td[style*="background-color: white"],
-  table td[style*="background-color:#fff"],
-  table td[style*="background-color: #fff"] {
+  /* Texte noir pour les cellules sans input (fond clair) */
+  table td:not(:has(input)),
+  table td:not(:has(select)),
+  table td:not(:has(textarea)) {
       color: #000 !important;
       font-weight: 600;
   }
