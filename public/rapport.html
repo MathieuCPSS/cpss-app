@@ -923,6 +923,7 @@ function supprimerRapport() {
 
  // 🔥 Nettoyage calendrier
 const donnees = JSON.parse(localStorage.getItem(STORAGE_PREFIX + cle) || '{}');
+  console.log("DONNEES PASSEES AU NETTOYAGE :", donnees);
 nettoyerCalendrierPourRapport(donnees);
   
   if (typeof CPSS !== 'undefined' && CPSS.deleteRapport) {
@@ -941,7 +942,7 @@ nettoyerCalendrierPourRapport(donnees);
     alert('Rapport supprimé (stockage local).');
   }
 }
-console.log("DONNEES PASSEES AU NETTOYAGE :", donnees);
+
 function nettoyerCalendrierPourRapport(donnees) {
   const annee = donnees['_save_annee'];
   if (!annee) return;
