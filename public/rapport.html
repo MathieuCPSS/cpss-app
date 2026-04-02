@@ -926,36 +926,36 @@ async function supprimerRapport() {
     return;
   }
 
-  // 🔥 Charger les données du rapport (local)
+  // Charger les données du rapport (local)
   const donnees = JSON.parse(localStorage.getItem('rapportCPSS_' + cle) || '{}');
 
   console.log("DONNEES PASSEES AU NETTOYAGE :", donnees);
 
-  // 🔥 Nettoyage du calendrier
+  // Nettoyage du calendrier
   try {
     nettoyerCalendrierPourRapport(donnees);
   } catch (e) {
     console.error("Erreur nettoyage calendrier :", e);
   }
 
-  // 🔥 Suppression locale
+  // Suppression locale
   localStorage.removeItem('rapportCPSS_' + cle);
 
-  // 🔥 Tentative de suppression serveur (sans checkOnline)
+  // Tentative de suppression serveur
   try {
     const r = await fetch('/api/rapports/' + encodeURIComponent(cle), {
       method: 'DELETE'
     });
     if (r.ok) {
-      showStatus('🗑️ Rapport supprimé (serveur + local)', '#b71c1c');
+      alert('🗑️ Rapport supprimé (serveur + local)');
     } else {
-      showStatus('🗑️ Rapport supprimé localement (erreur serveur)', '#e65100');
+      alert('🗑️ Rapport supprimé localement (erreur serveur)');
     }
   } catch {
-    showStatus('🗑️ Rapport supprimé localement (hors-ligne)', '#e65100');
+    alert('🗑️ Rapport supprimé localement (hors-ligne)');
   }
 
-  // 🔥 Rafraîchir la liste
+  // Rafraîchir la liste
   if (typeof rafraichirListe === 'function') {
     rafraichirListe();
   }
