@@ -922,9 +922,8 @@ function supprimerRapport() {
   if (!confirm('Supprimer définitivement "' + nomAffichage(cle) + '" ?')) return;
 
  // 🔥 Nettoyage calendrier
-  if (window.rapportData) {
-    nettoyerCalendrierPourRapport(window.rapportData);
-  }
+const donnees = JSON.parse(localStorage.getItem(STORAGE_PREFIX + cle) || '{}');
+nettoyerCalendrierPourRapport(donnees);
   
   if (typeof CPSS !== 'undefined' && CPSS.deleteRapport) {
     CPSS.deleteRapport(cle).then(() => {
