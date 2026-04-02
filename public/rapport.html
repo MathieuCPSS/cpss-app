@@ -953,19 +953,31 @@ function nettoyerCalendrierPourRapport(donnees) {
   const heuresTerrain = JSON.parse(localStorage.getItem(terrainKey) || '{}');
   const heuresTrajet  = JSON.parse(localStorage.getItem(trajetKey)  || '{}');
 
+  // 🔥 On charge aussi les tableaux de jours (couleurs)
+  let joursTerrain = JSON.parse(localStorage.getItem('joursTerrain') || '[]');
+  let joursTrajet  = JSON.parse(localStorage.getItem('joursTrajet')  || '[]');
+
   // Vérifier que le rapport contient bien des jours
   if (!donnees.jours || !Array.isArray(donnees.jours)) return;
 
   // Parcourir les jours du rapport
   donnees.jours.forEach(j => {
     const date = j.date;
+
+    // Supprimer les heures
     delete heuresTerrain[date];
     delete heuresTrajet[date];
+
+    // Supprimer les marquages de couleur
+    joursTerrain = joursTerrain.filter(d => d !== date);
+    joursTrajet  = joursTrajet.filter(d => d !== date);
   });
 
   // Réécrire les données nettoyées
   localStorage.setItem(terrainKey, JSON.stringify(heuresTerrain));
   localStorage.setItem(trajetKey,  JSON.stringify(heuresTrajet));
+  localStorage.setItem('joursTerrain', JSON.stringify(joursTerrain));
+  localStorage.setItem('joursTrajet',  JSON.stringify(joursTrajet));
 }
 
 
