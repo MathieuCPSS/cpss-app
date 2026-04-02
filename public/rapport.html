@@ -941,22 +941,17 @@ async function supprimerRapport() {
   // 🔥 Suppression locale
   localStorage.removeItem('rapportCPSS_' + cle);
 
-  // 🔥 Suppression serveur si en ligne
-  await checkOnline();
-  if (_online) {
-    try {
-      const r = await fetch('/api/rapports/' + encodeURIComponent(cle), {
-        method: 'DELETE'
-      });
-      if (r.ok) {
-        showStatus('🗑️ Rapport supprimé (serveur + local)', '#b71c1c');
-      } else {
-        showStatus('🗑️ Rapport supprimé localement (erreur serveur)', '#e65100');
-      }
-    } catch {
-      showStatus('🗑️ Rapport supprimé localement (hors-ligne)', '#e65100');
+  // 🔥 Tentative de suppression serveur (sans checkOnline)
+  try {
+    const r = await fetch('/api/rapports/' + encodeURIComponent(cle), {
+      method: 'DELETE'
+    });
+    if (r.ok) {
+      showStatus('🗑️ Rapport supprimé (serveur + local)', '#b71c1c');
+    } else {
+      showStatus('🗑️ Rapport supprimé localement (erreur serveur)', '#e65100');
     }
-  } else {
+  } catch {
     showStatus('🗑️ Rapport supprimé localement (hors-ligne)', '#e65100');
   }
 
