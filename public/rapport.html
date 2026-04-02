@@ -915,31 +915,31 @@ function chargerRapport() {
     alert('Rapport "' + nomAffichage(cle) + '" chargé (stockage local) !');
   }
 }
-
-function supprimerRapport() {
+async function supprimerRapport() {
   const cle = document.getElementById('liste-rapports').value;
   if (!cle) { alert('Veuillez sélectionner un rapport à supprimer.'); return; }
   if (!confirm('Supprimer définitivement "' + nomAffichage(cle) + '" ?')) return;
 
- // 🔥 Nettoyage calendrier
-const donnees = JSON.parse(localStorage.getItem(STORAGE_PREFIX + cle) || '{}');
+  // 🔥 Charger les vraies données AVANT de nettoyer
+  const donnees = CPSS.loadRapport 
+      ? await CPSS.loadRapport(cle) 
+      : JSON.parse(localStorage.getItem(STORAGE_PREFIX + cle) || '{}');
+
   console.log("DONNEES PASSEES AU NETTOYAGE :", donnees);
-nettoyerCalendrierPourRapport(donnees);
-  
-  if (typeof CPSS !== 'undefined' && CPSS.deleteRapport) {
-    CPSS.deleteRapport(cle).then(() => {
-      localStorage.removeItem(STORAGE_PREFIX + cle); // on nettoie aussi le local
-      rafraichirListe();
-      alert('Rapport supprimé.');
-    }).catch(err => {
+
+  nettoyerCalendrierPourRapport(donnees);
+
+  // suppression API + local
+  if (CPSS.deleteRapport) {
+    CPSS.deleteRapport(cle).finally(() => {
       localStorage.removeItem(STORAGE_PREFIX + cle);
       rafraichirListe();
-      alert('Rapport supprimé (local).');
+      alert('Rapport supprimé.');
     });
   } else {
     localStorage.removeItem(STORAGE_PREFIX + cle);
     rafraichirListe();
-    alert('Rapport supprimé (stockage local).');
+    alert('Rapport supprimé (local).');
   }
 }
 
