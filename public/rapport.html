@@ -220,17 +220,18 @@
   <style>
 /* Thème sombre (affichage écran uniquement) */
 @media screen {
-  table td:first-child,
-  table th {
-      color: #ffffff !important;
+
+  /* Zones à fond clair → texte noir */
+  table td[style*="background: white"],
+  table td[style*="background:#fff"],
+  table td[style*="background: #fff"],
+  table td[style*="background-color: white"],
+  table td[style*="background-color:#fff"],
+  table td[style*="background-color: #fff"] {
+      color: #000 !important;
       font-weight: 600;
   }
 
-  /* Ligne Total */
-  table tr:last-child td {
-      color: #ffffff !important;
-      font-weight: 600;
-  }
 }
  
   body {
