@@ -921,6 +921,11 @@ function supprimerRapport() {
   if (!cle) { alert('Veuillez sélectionner un rapport à supprimer.'); return; }
   if (!confirm('Supprimer définitivement "' + nomAffichage(cle) + '" ?')) return;
 
+ // 🔥 Nettoyage calendrier
+  if (window.rapportData) {
+    nettoyerCalendrierPourRapport(window.rapportData);
+  }
+  
   if (typeof CPSS !== 'undefined' && CPSS.deleteRapport) {
     CPSS.deleteRapport(cle).then(() => {
       localStorage.removeItem(STORAGE_PREFIX + cle); // on nettoie aussi le local
@@ -938,6 +943,32 @@ function supprimerRapport() {
   }
 }
 
+function nettoyerCalendrierPourRapport(donnees) {
+  const annee = donnees['_save_annee'];
+  if (!annee) return;
+
+  // Récupérer les clés existantes
+  const terrainKey = 'heuresTerrain_' + annee;
+  const trajetKey  = 'heuresTrajet_' + annee;
+
+  const heuresTerrain = JSON.parse(localStorage.getItem(terrainKey) || '{}');
+  const heuresTrajet  = JSON.parse(localStorage.getItem(trajetKey)  || '{}');
+
+  // Parcourir toutes les entrées du rapport
+  for (const key in donnees) {
+    if (key.startsWith('jour_')) {
+      const date = donnees[key]; // ex: "2026-03-18"
+
+      // Supprimer les heures terrain/trajet pour cette date
+      delete heuresTerrain[date];
+      delete heuresTrajet[date];
+    }
+  }
+
+  // Réécrire les données nettoyées
+  localStorage.setItem(terrainKey, JSON.stringify(heuresTerrain));
+  localStorage.setItem(trajetKey,  JSON.stringify(heuresTrajet));
+}
 
 
 
