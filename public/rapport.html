@@ -917,67 +917,89 @@ function chargerRapport() {
 }
 async function supprimerRapport() {
   const cle = document.getElementById('liste-rapports').value;
-  if (!cle) { alert('Veuillez sélectionner un rapport à supprimer.'); return; }
-  if (!confirm('Supprimer définitivement "' + nomAffichage(cle) + '" ?')) return;
+  if (!cle) {
+    alert('Veuillez sélectionner un rapport à supprimer.');
+    return;
+  }
 
-  // 🔥 Charger les vraies données AVANT de nettoyer
-  const donnees = CPSS.loadRapport 
-      ? await CPSS.loadRapport(cle) 
-      : JSON.parse(localStorage.getItem(STORAGE_PREFIX + cle) || '{}');
+  if (!confirm('Supprimer définitivement le rapport "' + cle + '" ?')) {
+    return;
+  }
+
+  // 🔥 Charger les données du rapport (local)
+  const donnees = JSON.parse(localStorage.getItem('rapportCPSS_' + cle) || '{}');
 
   console.log("DONNEES PASSEES AU NETTOYAGE :", donnees);
 
-  nettoyerCalendrierPourRapport(donnees);
+  // 🔥 Nettoyage du calendrier
+  try {
+    nettoyerCalendrierPourRapport(donnees);
+  } catch (e) {
+    console.error("Erreur nettoyage calendrier :", e);
+  }
 
-  // suppression API + local
-  if (CPSS.deleteRapport) {
-    CPSS.deleteRapport(cle).finally(() => {
-      localStorage.removeItem(STORAGE_PREFIX + cle);
-      rafraichirListe();
-      alert('Rapport supprimé.');
-    });
+  // 🔥 Suppression locale
+  localStorage.removeItem('rapportCPSS_' + cle);
+
+  // 🔥 Suppression serveur si en ligne
+  await checkOnline();
+  if (_online) {
+    try {
+      const r = await fetch('/api/rapports/' + encodeURIComponent(cle), {
+        method: 'DELETE'
+      });
+      if (r.ok) {
+        showStatus('🗑️ Rapport supprimé (serveur + local)', '#b71c1c');
+      } else {
+        showStatus('🗑️ Rapport supprimé localement (erreur serveur)', '#e65100');
+      }
+    } catch {
+      showStatus('🗑️ Rapport supprimé localement (hors-ligne)', '#e65100');
+    }
   } else {
-    localStorage.removeItem(STORAGE_PREFIX + cle);
+    showStatus('🗑️ Rapport supprimé localement (hors-ligne)', '#e65100');
+  }
+
+  // 🔥 Rafraîchir la liste
+  if (typeof rafraichirListe === 'function') {
     rafraichirListe();
-    alert('Rapport supprimé (local).');
   }
 }
 
-function nettoyerCalendrierPourRapport(donnees) {
-  const annee = donnees['_save_annee'];
-  if (!annee) return;
+function nettoyerCalendrierPourRapport(d) {
+  if (!d) return;
 
-  const terrainKey = 'heuresTerrain_' + annee;
-  const trajetKey  = 'heuresTrajet_' + annee;
+  // Charger l'état actuel du calendrier
+  let joursTerrain   = JSON.parse(localStorage.getItem("joursTerrain")   || "{}");
+  let joursTrajet    = JSON.parse(localStorage.getItem("joursTrajet")    || "{}");
+  let heuresTerrain  = JSON.parse(localStorage.getItem("heuresTerrain")  || "{}");
+  let heuresTrajet   = JSON.parse(localStorage.getItem("heuresTrajet")   || "{}");
 
-  const heuresTerrain = JSON.parse(localStorage.getItem(terrainKey) || '{}');
-  const heuresTrajet  = JSON.parse(localStorage.getItem(trajetKey)  || '{}');
-
-  // 🔥 Clés correctes pour les couleurs (objets)
-  const joursTerrainKey = 'joursTerrain_';
-  const joursTrajetKey  = 'joursTrajet_';
-
-  let joursTerrain = JSON.parse(localStorage.getItem(joursTerrainKey) || '{}');
-  let joursTrajet  = JSON.parse(localStorage.getItem(joursTrajetKey)  || '{}');
-
-  if (!donnees.jours || !Array.isArray(donnees.jours)) return;
-
-  donnees.jours.forEach(j => {
-    const date = j.date;
-
-    // Supprimer les heures
-    delete heuresTerrain[date];
-    delete heuresTrajet[date];
-
-    // Supprimer les marquages de couleur (objets)
+  // Supprimer les jours terrain
+  Object.keys(d._joursTerrain || {}).forEach(date => {
     delete joursTerrain[date];
+  });
+
+  // Supprimer les jours trajet
+  Object.keys(d._joursTrajet || {}).forEach(date => {
     delete joursTrajet[date];
   });
 
-  localStorage.setItem(terrainKey, JSON.stringify(heuresTerrain));
-  localStorage.setItem(trajetKey,  JSON.stringify(heuresTrajet));
-  localStorage.setItem(joursTerrainKey, JSON.stringify(joursTerrain));
-  localStorage.setItem(joursTrajetKey,  JSON.stringify(joursTrajet));
+  // Supprimer les heures terrain
+  Object.keys(d._heuresTerrain || {}).forEach(date => {
+    delete heuresTerrain[date];
+  });
+
+  // Supprimer les heures trajet
+  Object.keys(d._heuresTrajet || {}).forEach(date => {
+    delete heuresTrajet[date];
+  });
+
+  // Sauvegarder l'état nettoyé
+  localStorage.setItem("joursTerrain",   JSON.stringify(joursTerrain));
+  localStorage.setItem("joursTrajet",    JSON.stringify(joursTrajet));
+  localStorage.setItem("heuresTerrain",  JSON.stringify(heuresTerrain));
+  localStorage.setItem("heuresTrajet",   JSON.stringify(heuresTrajet));
 }
 
     function viderDonnees() {
