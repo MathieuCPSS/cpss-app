@@ -947,7 +947,6 @@ function nettoyerCalendrierPourRapport(donnees) {
   const annee = donnees['_save_annee'];
   if (!annee) return;
 
-  // Récupérer les clés existantes
   const terrainKey = 'heuresTerrain_' + annee;
   const trajetKey  = 'heuresTrajet_' + annee;
 
@@ -956,12 +955,13 @@ function nettoyerCalendrierPourRapport(donnees) {
 
   // Parcourir toutes les entrées du rapport
   for (const key in donnees) {
-    if (key.startsWith('jour_')) {
-      const val = donnees[key]; // ex: "2026-03-18"
-if (typeof val ==='string' && /^\d{4}-\d{2}$/.test(val)) {
+    const val = donnees[key];
+
+    // Si la valeur ressemble à une date ISO (YYYY-MM-DD)
+    if (typeof val === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(val)) {
       // Supprimer les heures terrain/trajet pour cette date
-      delete heuresTerrain[date];
-      delete heuresTrajet[date];
+      delete heuresTerrain[val];
+      delete heuresTrajet[val];
     }
   }
 
@@ -969,6 +969,7 @@ if (typeof val ==='string' && /^\d{4}-\d{2}$/.test(val)) {
   localStorage.setItem(terrainKey, JSON.stringify(heuresTerrain));
   localStorage.setItem(trajetKey,  JSON.stringify(heuresTrajet));
 }
+
 
 
 
