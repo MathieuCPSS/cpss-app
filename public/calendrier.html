@@ -144,8 +144,15 @@ function calculPaques(annee) {
 
 function joursFeries(annee) {
     const paques = new Date(calculPaques(annee));
-    const ascension = new Date(paques); ascension.setDate(paques.getDate() + 39);
-    const pentecote = new Date(paques); pentecote.setDate(paques.getDate() + 49);
+
+    const lundiPaques = new Date(paques);
+    lundiPaques.setDate(paques.getDate() + 1);
+
+    const ascension = new Date(paques);
+    ascension.setDate(paques.getDate() + 39);
+
+    const pentecote = new Date(paques);
+    pentecote.setDate(paques.getDate() + 49);
 
     const format = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 
@@ -159,6 +166,7 @@ function joursFeries(annee) {
         [`${annee}-11-11`]: true,
         [`${annee}-12-25`]: true,
         [format(paques)]: true,
+        [format(lundiPaques)]: true,   // ← ajouté
         [format(ascension)]: true,
         [format(pentecote)]: true
     };
