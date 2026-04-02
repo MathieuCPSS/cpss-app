@@ -220,17 +220,16 @@
   <style>
 /* Thème sombre (affichage écran uniquement) */
 @media screen {
-
-  /* Texte noir pour les cellules sans input (fond clair) */
-  table td:not(:has(input)),
-  table td:not(:has(select)),
-  table td:not(:has(textarea)) {
-      color: #000 !important;
-      font-weight: 600;
+  table, table td, table th {
+      color: #ffffff !important;
   }
-
 }
- 
+   table td {
+      background-color: #2a2a2a !important;
+  }
+}
+
+
   body {
       background: #1e1e1e;
       color: #e0e0e0;
