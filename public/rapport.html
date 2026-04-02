@@ -957,8 +957,8 @@ function nettoyerCalendrierPourRapport(donnees) {
   // Parcourir toutes les entrées du rapport
   for (const key in donnees) {
     if (key.startsWith('jour_')) {
-      const date = donnees[key]; // ex: "2026-03-18"
-
+      const val = donnees[key]; // ex: "2026-03-18"
+if (typeof val ==='string' && /^\d{4}-\d{2}$/.test(val)) {
       // Supprimer les heures terrain/trajet pour cette date
       delete heuresTerrain[date];
       delete heuresTrajet[date];
