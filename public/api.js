@@ -98,32 +98,36 @@ const CPSS = (function() {
   }
 
   // ── Rapports ──────────────────────────────────────────────────────
-  async function loadRapports() {
-    await checkOnline();
-    if (_online) {
-      try {
-        const r = await fetch('/api/rapports');
-        if (r.ok) {
-          const data = await r.json();
-          // Mettre à jour le cache local (clé par clé)
+async function loadRapports() {
+  await checkOnline();
+  if (_online) {
+    try {
+      const r = await fetch('/api/rapports');
+      if (r.ok) {
+        const data = await r.json();
+
+        // ⚠️ AJOUT CRUCIAL : si l’API renvoie vide → fallback local
+        if (Object.keys(data).length > 0) {
           Object.keys(data).forEach(k => {
             localStorage.setItem('rapportCPSS_' + k, JSON.stringify(data[k]));
           });
-          // Retourner la liste des clés avec labels
           return Object.keys(data).map(k => ({ key: k, label: nomAffichage(k) }));
         }
-      } catch {}
-    }
-    // Fallback : reconstruire depuis localStorage
-    const keys = [];
-    for (let i = 0; i < localStorage.length; i++) {
-      const k = localStorage.key(i);
-      if (k && k.startsWith('rapportCPSS_')) {
-        keys.push({ key: k.replace('rapportCPSS_', ''), label: nomAffichage(k.replace('rapportCPSS_', '')) });
       }
-    }
-    return keys;
+    } catch {}
   }
+
+  // --- Fallback local ---
+  const keys = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (k && k.startsWith('rapportCPSS_')) {
+      const cle = k.replace('rapportCPSS_', '');
+      keys.push({ key: cle, label: nomAffichage(cle) });
+    }
+  }
+  return keys;
+}
 
   async function loadRapport(key) {
     await checkOnline();
