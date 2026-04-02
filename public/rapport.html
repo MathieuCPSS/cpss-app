@@ -220,12 +220,14 @@
   <style>
 /* Thème sombre (affichage écran uniquement) */
 @media screen {
-  th {
+  table td:first-child,
+  table th {
       color: #ffffff !important;
       font-weight: 600;
   }
 
-  tfoot td {
+  /* Ligne Total */
+  table tr:last-child td {
       color: #ffffff !important;
       font-weight: 600;
   }
