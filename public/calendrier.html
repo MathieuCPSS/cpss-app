@@ -81,11 +81,7 @@ h1 {
     font-weight: bold;
 }
 
-.case.terrain { background: #d9f7d9; }
-.case.bureau { background: #d9e8ff; }
-.case.mixte { background: #fceec0; }
-.case.ferie { background: #eeeeee; }
-.case.trajet { background: #ffe7c2; }
+
 .heures {
     font-size: 11px;
     margin-top: 2px;
@@ -93,96 +89,105 @@ h1 {
 </style>
     
 <style>
-/* Thème sombre (affichage écran uniquement) */
+/* ============================
+   THÈME SOMBRE – VERSION PROPRE
+   ============================ */
 @media screen {
-/* Jours travaillés (bureau, terrain, trajet, mixte) */
-.case.terrain,
-.case.bureau,
-.case.trajet,
-.case.mixte {
-    background-color: #662222 !important;
-    color: #ffffff !important;
-}
 
-/* Jour de congé */
-.case.conge {
-    background-color: #1a6600 !important;
-    color: #ffffff !important;
-}
+    /* Jours travaillés (bureau, terrain, trajet, mixte) */
+    .case.terrain,
+    .case.bureau,
+    .case.trajet,
+    .case.mixte {
+        background-color: #662222 !important; /* rouge profond */
+        color: #ffffff !important;
+    }
 
-/* Jour de repos */
-.case.repos {
-    background-color: #004d66 !important;
-    color: #ffffff !important;
-}
+    /* Jour de congé */
+    .case.conge {
+        background-color: #1a6600 !important; /* vert profond */
+        color: #ffffff !important;
+    }
 
+    /* Jour de repos */
+    .case.repos {
+        background-color: #004d66 !important; /* bleu pétrole */
+        color: #ffffff !important;
+    }
+
+    /* Jour férié */
     .case.ferie {
-    background-color: #b38f00 !important;
-    color: #ffffff !important;
-    position: relative;
-}
+        background-color: #b38f00 !important; /* doré profond */
+        color: #ffffff !important;
+        position: relative;
+    }
+
     .case.ferie::after {
-    content: "Férié";
-    position: absolute;
-    bottom: 4px;
-    right: 4px;
-    font-size: 10px;
-    opacity: 0.8;
-}
-  /* Fond général */
-  body {
-      background: #1e1e1e !important;
-      color: #ffffff !important;
-  }
+        content: "Férié";
+        position: absolute;
+        bottom: 4px;
+        right: 4px;
+        font-size: 10px;
+        opacity: 0.8;
+    }
 
-  /* Conteneur des mois */
-  .mois {
-      background: #2a2a2a !important;
-      color: #ffffff !important;
-      box-shadow: 0 0 5px #000 !important;
-      border: 1px solid #444 !important;
-  }
+    /* Fond général */
+    body {
+        background: #1e1e1e !important;
+        color: #ffffff !important;
+    }
 
-  /* Titres des mois */
-  .mois h2 {
-      color: #ffffff !important;
-  }
+    /* Conteneur des mois */
+    .mois {
+        background: #2a2a2a !important;
+        color: #ffffff !important;
+        box-shadow: 0 0 5px #000 !important;
+        border: 1px solid #444 !important;
+    }
 
-  /* Jours de la semaine */
-  .jours {
-      color: #ffffff !important;
-  }
+    /* Titres des mois */
+    .mois h2 {
+        color: #ffffff !important;
+    }
 
-  /* Cases du calendrier */
-  .case {
-      background: #2a2a2a !important;
-      color: #ffffff !important;
-      border: 1px solid #444 !important;
-  }
+    /* Jours de la semaine */
+    .jours {
+        color: #ffffff !important;
+    }
 
-  /* Numéro du jour */
-  .case .num {
-      color: #ffffff !important;
-  }
+    /* Cases du calendrier */
+    .case {
+        background: #2a2a2a !important;
+        color: #ffffff !important;
+        border: 1px solid #444 !important;
+        position: relative;
+    }
 
+    /* Numéro du jour */
+    .case .num {
+        color: #ffffff !important;
+        font-weight: bold;
+    }
 
-  /* Heures affichées dans les cases */
-  .heures {
-      color: #dddddd !important;
-  }
+    /* Heures affichées dans les cases */
+    .heures {
+        color: #dddddd !important;
+        font-size: 11px;
+        margin-top: 2px;
+    }
 
-  /* Header */
-  header button {
-      background: #333 !important;
-      color: #fff !important;
-      border: 1px solid #555 !important;
-  }
+    /* Header */
+    header button {
+        background: #333 !important;
+        color: #fff !important;
+        border: 1px solid #555 !important;
+    }
 
-  #anneeContainer input {
-      background: #333 !important;
-      color: #fff !important;
-      border: 1px solid #555 !important;
-  }
+    #anneeContainer input {
+        background: #333 !important;
+        color: #fff !important;
+        border: 1px solid #555 !important;
+    }
 }
     </style>
 </head>
