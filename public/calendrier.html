@@ -334,7 +334,7 @@ function genererCalendrier() {
             caseDiv.className = "case";
 
             const dateStr = `${annee}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
-
+            caseDiv.dataset.date = dateStr;
             const t  = heuresTerrain[dateStr] || 0;
             const b  = heuresBureau[dateStr]  || 0;
             const tr = heuresTrajet[dateStr]  || 0;
