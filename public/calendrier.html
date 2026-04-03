@@ -408,6 +408,42 @@ async function exportPDF() {
 
     pdf.save(`Calendrier_${annee}.pdf`);
 }
+    
+</script>
+    
+<!-- Fenêtre de dialogue -->
+<div id="dialogOverlay" style="
+    display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+    background:rgba(0,0,0,0.6); z-index:1000;">
+</div>
+
+<div id="dialogBox" style="
+    display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+    background:#2a2a2a; color:white; padding:20px; border-radius:10px;
+    width:300px; z-index:1001; box-shadow:0 0 10px black;">
+    
+    <h3 id="dialogTitre" style="margin-top:0;">Modifier le jour</h3>
+
+    <div id="dialogImport"></div>
+
+    <label>Heures bureau :</label>
+    <input type="text" id="inputBureau" placeholder="ex : 7:30" style="
+        width:100%; padding:6px; margin:5px 0 15px 0;">
+
+    <label><input type="checkbox" id="chkRepos"> Repos</label><br>
+    <label><input type="checkbox" id="chkConge"> Congé</label>
+
+    <div id="zoneFinConge" style="display:none; margin-top:10px;">
+        Fin des congés :
+        <input type="date" id="inputFinConge" style="width:100%; padding:6px;">
+    </div>
+
+    <div style="margin-top:20px; text-align:right;">
+        <button id="btnAnnuler">Annuler</button>
+        <button id="btnValider">Valider</button>
+    </div>
+</div>
+    <script>
 // ------------------------------
 // FENÊTRE DE DIALOGUE
 // ------------------------------
@@ -560,40 +596,6 @@ function appliquerConge(debut, fin) {
     localStorage.setItem("heuresBureau_" + annee, JSON.stringify(bureau));
     localStorage.setItem("conge_" + annee, JSON.stringify(conge));
 }
-    
-</script>
-    
-<!-- Fenêtre de dialogue -->
-<div id="dialogOverlay" style="
-    display:none; position:fixed; top:0; left:0; width:100%; height:100%;
-    background:rgba(0,0,0,0.6); z-index:1000;">
-</div>
-
-<div id="dialogBox" style="
-    display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
-    background:#2a2a2a; color:white; padding:20px; border-radius:10px;
-    width:300px; z-index:1001; box-shadow:0 0 10px black;">
-    
-    <h3 id="dialogTitre" style="margin-top:0;">Modifier le jour</h3>
-
-    <div id="dialogImport"></div>
-
-    <label>Heures bureau :</label>
-    <input type="text" id="inputBureau" placeholder="ex : 7:30" style="
-        width:100%; padding:6px; margin:5px 0 15px 0;">
-
-    <label><input type="checkbox" id="chkRepos"> Repos</label><br>
-    <label><input type="checkbox" id="chkConge"> Congé</label>
-
-    <div id="zoneFinConge" style="display:none; margin-top:10px;">
-        Fin des congés :
-        <input type="date" id="inputFinConge" style="width:100%; padding:6px;">
-    </div>
-
-    <div style="margin-top:20px; text-align:right;">
-        <button id="btnAnnuler">Annuler</button>
-        <button id="btnValider">Valider</button>
-    </div>
-</div>
+    </script>
 </body>
 </html>
