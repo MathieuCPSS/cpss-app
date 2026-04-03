@@ -445,6 +445,7 @@ async function exportPDF() {
     </div>
 
     <div style="margin-top:20px; text-align:right;">
+        <button id="btnEffacer" style="margin-right:10px;">Effacer ce jour</button>
         <button id="btnAnnuler">Annuler</button>
         <button id="btnValider">Valider</button>
     </div>
@@ -464,6 +465,33 @@ function ouvrirDialogue(dateStr, t, tr, b) {
     heuresTrajetCache = tr;
     heuresBureauCache = b;
 
+document.getElementById("btnEffacer").onclick = () => {
+    if (!confirm("Effacer toutes les données pour le " + currentDateStr + " ?")) return;
+
+    // Charger les données
+    const heuresBureau = JSON.parse(localStorage.getItem("heuresBureau_" + annee) || "{}");
+    const repos = JSON.parse(localStorage.getItem("repos_" + annee) || "{}");
+    const conge = JSON.parse(localStorage.getItem("conge_" + annee) || "{}");
+
+    // Effacer bureau
+    delete heuresBureau[currentDateStr];
+    localStorage.setItem("heuresBureau_" + annee, JSON.stringify(heuresBureau));
+
+    // Effacer repos
+    delete repos[currentDateStr];
+    localStorage.setItem("repos_" + annee, JSON.stringify(repos));
+
+    // Effacer congé
+    delete conge[currentDateStr];
+    localStorage.setItem("conge_" + annee, JSON.stringify(conge));
+
+    // Optionnel : effacer terrain/trajet importés
+    // supprimerHeuresImportees(currentDateStr);
+
+    fermerDialogue();
+    genererCalendrier();
+};
+    
     document.getElementById("dialogTitre").innerText =
         "Modifier le " + dateStr;
 
@@ -602,6 +630,7 @@ function appliquerConge(debut, fin) {
     localStorage.setItem("heuresBureau_" + annee, JSON.stringify(bureau));
     localStorage.setItem("conge_" + annee, JSON.stringify(conge));
 }
+        
     </script>
 </body>
 </html>
