@@ -1608,6 +1608,27 @@ document.addEventListener("input", calculerHeuresTerrain);
 // 🔥 Recalcule automatiquement au chargement de la page
 document.addEventListener("DOMContentLoaded", calculerHeuresTerrain);
 
+// ======================================================
+// CHARGEMENT D’UN RAPPORT IMPORTÉ (depuis ouvrirRapport.html)
+// ======================================================
+function chargerRapportDepuisJSON(data) {
+    console.log("📥 Application des données importées…");
+
+    // 1. Appliquer toutes les données dans le formulaire
+    appliquerDonnees(data);
+
+    // 2. Mettre à jour les champs de sauvegarde (client/semaine/année)
+    if (data['_save_client'])  document.getElementById('save-client').value  = data['_save_client'];
+    if (data['_save_semaine']) document.getElementById('save-semaine').value = data['_save_semaine'];
+    if (data['_save_annee'])   document.getElementById('save-annee').value   = data['_save_annee'];
+
+    // 3. Mettre à jour les variables globales comme si un rapport normal était chargé
+    window.rapportCle  = "import_json";
+    window.rapportData = data;
+
+    console.log("✅ Rapport importé appliqué avec succès !");
+}
+  
 </script>
   
 </body>
