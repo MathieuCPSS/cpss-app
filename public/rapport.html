@@ -1537,15 +1537,14 @@ function toMinutes(hm) {
     const [h, m] = hm.split(":").map(Number);
     return h * 60 + m;
 }
-
 function calculerHeuresTerrain() {
     const lignes = document.querySelectorAll(".ligne-saisie");
 
     let heuresTerrain = {};
     let joursTerrain = {};
 
-    let heuresTrajet = {};   // ← NOUVEAU
-    let joursTrajet = {};    // ← NOUVEAU
+    let heuresTrajet = {};
+    let joursTrajet = {};
 
     lignes.forEach(ligne => {
         const date = ligne.querySelector('input[type="date"]').value;
@@ -1563,7 +1562,7 @@ function calculerHeuresTerrain() {
             }
         }
 
-        // --- Trajet (NOUVEAU) ---
+        // --- Trajet ---
         const trajet = ligne.querySelector(".temps-trajet")?.value;
 
         if (date && trajet) {
@@ -1575,16 +1574,20 @@ function calculerHeuresTerrain() {
         }
     });
 
-localStorage.setItem("heuresTerrain", JSON.stringify(heuresTerrain));
-localStorage.setItem("joursTerrain", JSON.stringify(joursTerrain));
+    // Sauvegarde dans localStorage
+    localStorage.setItem("heuresTerrain", JSON.stringify(heuresTerrain));
+    localStorage.setItem("joursTerrain", JSON.stringify(joursTerrain));
 
-localStorage.setItem("heuresTrajet", JSON.stringify(heuresTrajet));
-localStorage.setItem("joursTrajet", JSON.stringify(joursTrajet));
-
+    localStorage.setItem("heuresTrajet", JSON.stringify(heuresTrajet));
+    localStorage.setItem("joursTrajet", JSON.stringify(joursTrajet));
 }
 
-// Recalcule automatiquement à chaque saisie
+// 🔥 Recalcule automatiquement à chaque saisie
 document.addEventListener("input", calculerHeuresTerrain);
+
+// 🔥 Recalcule automatiquement au chargement de la page
+document.addEventListener("DOMContentLoaded", calculerHeuresTerrain);
+
 </script>
   
 </body>
