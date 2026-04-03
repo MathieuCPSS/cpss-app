@@ -339,6 +339,8 @@ function genererCalendrier() {
             const t  = heuresTerrain[dateStr] || 0;
             const b  = heuresBureau[dateStr]  || 0;
             const tr = heuresTrajet[dateStr]  || 0;
+            const repos = JSON.parse(localStorage.getItem("repos_" + annee) || "{}");
+            const conge = JSON.parse(localStorage.getItem("conge_" + annee) || "{}");
 
             if (tr > 0 && t > 0) caseDiv.classList.add("mixte");
             else if (tr > 0)     caseDiv.classList.add("trajet");
@@ -346,8 +348,12 @@ function genererCalendrier() {
             else if (b > 0)      caseDiv.classList.add("bureau");
 
             if (feries[dateStr]) caseDiv.classList.add("ferie");
-
+            if (repos[dateStr]) caseDiv.classList.add("repos");
+            if (conge[dateStr]) caseDiv.classList.add("conge");
+            
             let contenuHeures = "";
+            if (repos[dateStr]) contenuHeures = `<div class="heures">Repos</div>`;
+            if (conge[dateStr]) contenuHeures = `<div class="heures">Congé</div>`;
             if (t  > 0) contenuHeures += `<div class="heures">🛠️ ${(t/60).toFixed(2)}h</div>`;
             if (tr > 0) contenuHeures += `<div class="heures">🚗 ${(tr/60).toFixed(2)}h</div>`;
             if (b  > 0) contenuHeures += `<div class="heures">🏢 ${(b/60).toFixed(2)}h</div>`;
