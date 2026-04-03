@@ -357,27 +357,9 @@ function genererCalendrier() {
 
             caseDiv.innerHTML = `<div class="num">${d}</div>${contenuHeures}`;
 
-            caseDiv.onclick = () => {
-                const saisie = prompt("Saisir les heures bureau :", "");
-
-                if (saisie === null) return;
-
-                const clean = saisie.trim();
-
-                if (clean === "0" || clean === "00" || clean === "00:00" || clean === "0h" || clean === "0h00") {
-                    delete heuresBureau[dateStr];
-                    localStorage.setItem("heuresBureau_" + annee, JSON.stringify(heuresBureau));
-                    genererCalendrier();
-                    return;
-                }
-
-                if (clean.includes(":")) {
-                    const [h, m] = clean.split(":").map(Number);
-                    heuresBureau[dateStr] = h*60 + m;
-                    localStorage.setItem("heuresBureau_" + annee, JSON.stringify(heuresBureau));
-                    genererCalendrier();
-                }
-            };
+       caseDiv.onclick = () => {
+    ouvrirDialogue(dateStr, t, tr, b);
+};
 
             grid.appendChild(caseDiv);
         }
@@ -426,7 +408,192 @@ async function exportPDF() {
 
     pdf.save(`Calendrier_${annee}.pdf`);
 }
-</script>
+// ------------------------------
+// FENÊTRE DE DIALOGUE
+// ------------------------------
+let currentDateStr = null;
+let heuresTerrainCache = null;
+let heuresTrajetCache = null;
+let heuresBureauCache = null;
 
+function ouvrirDialogue(dateStr, t, tr, b) {
+    currentDateStr = dateStr;
+    heuresTerrainCache = t;
+    heuresTrajetCache = tr;
+    heuresBureauCache = b;
+
+    document.getElementById("dialogTitre").innerText =
+        "Modifier le " + dateStr;
+
+    // Affichage des données importées
+    let html = "";
+    if (t > 0) html += `<div>🛠️ Terrain : ${(t/60).toFixed(2)}h</div>`;
+    if (tr > 0) html += `<div>🚗 Trajet : ${(tr/60).toFixed(2)}h</div>`;
+    if (html === "") html = "<i>Aucune donnée importée</i>";
+
+    document.getElementById("dialogImport").innerHTML = html;
+
+    // Pré-remplir bureau
+    document.getElementById("inputBureau").value =
+        b > 0 ? (Math.floor(b/60) + ":" + String(b%60).padStart(2,"0")) : "";
+
+    // Reset des cases
+    document.getElementById("chkRepos").checked = false;
+    document.getElementById("chkConge").checked = false;
+    document.getElementById("zoneFinConge").style.display = "none";
+
+    // Afficher
+    document.getElementById("dialogOverlay").style.display = "block";
+    document.getElementById("dialogBox").style.display = "block";
+}
+
+// Gestion affichage fin congé
+document.getElementById("chkConge").addEventListener("change", () => {
+    document.getElementById("zoneFinConge").style.display =
+        document.getElementById("chkConge").checked ? "block" : "none";
+});
+
+// Annuler
+document.getElementById("btnAnnuler").onclick = () => {
+    document.getElementById("dialogOverlay").style.display = "none";
+    document.getElementById("dialogBox").style.display = "none";
+};
+
+// Valider
+document.getElementById("btnValider").onclick = () => {
+    const heuresBureau = JSON.parse(localStorage.getItem("heuresBureau_" + annee) || "{}");
+
+    const chkRepos = document.getElementById("chkRepos").checked;
+    const chkConge = document.getElementById("chkConge").checked;
+
+    // REPOS
+    if (chkRepos) {
+        delete heuresBureau[currentDateStr];
+        supprimerHeuresImportees(currentDateStr);
+        marquerRepos(currentDateStr);
+        localStorage.setItem("heuresBureau_" + annee, JSON.stringify(heuresBureau));
+        fermerDialogue();
+        genererCalendrier();
+        return;
+    }
+
+    // CONGÉ
+    if (chkConge) {
+        const fin = document.getElementById("inputFinConge").value;
+        if (!fin) {
+            alert("Veuillez indiquer la date de fin des congés.");
+            return;
+        }
+        appliquerConge(currentDateStr, fin);
+        fermerDialogue();
+        genererCalendrier();
+        return;
+    }
+
+    // BUREAU (manuel)
+    const saisie = document.getElementById("inputBureau").value.trim();
+    if (saisie !== "") {
+        let h = 0, m = 0;
+        if (saisie.includes(":")) {
+            [h, m] = saisie.split(":").map(Number);
+        } else {
+            h = Number(saisie);
+        }
+        heuresBureau[currentDateStr] = h*60 + m;
+    } else {
+        delete heuresBureau[currentDateStr];
+    }
+
+    localStorage.setItem("heuresBureau_" + annee, JSON.stringify(heuresBureau));
+    fermerDialogue();
+    genererCalendrier();
+};
+
+function fermerDialogue() {
+    document.getElementById("dialogOverlay").style.display = "none";
+    document.getElementById("dialogBox").style.display = "none";
+}
+
+// ------------------------------
+// LOGIQUE REPOS / CONGÉ
+// ------------------------------
+function supprimerHeuresImportees(dateStr) {
+    const terrain = JSON.parse(localStorage.getItem("heuresTerrain") || "{}");
+    const trajet  = JSON.parse(localStorage.getItem("heuresTrajet")  || "{}");
+
+    delete terrain[dateStr];
+    delete trajet[dateStr];
+
+    localStorage.setItem("heuresTerrain", JSON.stringify(terrain));
+    localStorage.setItem("heuresTrajet", JSON.stringify(trajet));
+}
+
+function marquerRepos(dateStr) {
+    const repos = JSON.parse(localStorage.getItem("repos_" + annee) || "{}");
+    repos[dateStr] = true;
+    localStorage.setItem("repos_" + annee, JSON.stringify(repos));
+}
+
+function appliquerConge(debut, fin) {
+    const conge = JSON.parse(localStorage.getItem("conge_" + annee) || "{}");
+    const terrain = JSON.parse(localStorage.getItem("heuresTerrain") || "{}");
+    const trajet  = JSON.parse(localStorage.getItem("heuresTrajet")  || "{}");
+    const bureau  = JSON.parse(localStorage.getItem("heuresBureau_" + annee) || "{}");
+
+    let d = new Date(debut);
+    const end = new Date(fin);
+
+    while (d <= end) {
+        const ds = d.toISOString().split("T")[0];
+
+        delete terrain[ds];
+        delete trajet[ds];
+        delete bureau[ds];
+
+        conge[ds] = true;
+
+        d.setDate(d.getDate() + 1);
+    }
+
+    localStorage.setItem("heuresTerrain", JSON.stringify(terrain));
+    localStorage.setItem("heuresTrajet", JSON.stringify(trajet));
+    localStorage.setItem("heuresBureau_" + annee, JSON.stringify(bureau));
+    localStorage.setItem("conge_" + annee, JSON.stringify(conge));
+}
+    
+</script>
+    
+<!-- Fenêtre de dialogue -->
+<div id="dialogOverlay" style="
+    display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+    background:rgba(0,0,0,0.6); z-index:1000;">
+</div>
+
+<div id="dialogBox" style="
+    display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+    background:#2a2a2a; color:white; padding:20px; border-radius:10px;
+    width:300px; z-index:1001; box-shadow:0 0 10px black;">
+    
+    <h3 id="dialogTitre" style="margin-top:0;">Modifier le jour</h3>
+
+    <div id="dialogImport"></div>
+
+    <label>Heures bureau :</label>
+    <input type="text" id="inputBureau" placeholder="ex : 7:30" style="
+        width:100%; padding:6px; margin:5px 0 15px 0;">
+
+    <label><input type="checkbox" id="chkRepos"> Repos</label><br>
+    <label><input type="checkbox" id="chkConge"> Congé</label>
+
+    <div id="zoneFinConge" style="display:none; margin-top:10px;">
+        Fin des congés :
+        <input type="date" id="inputFinConge" style="width:100%; padding:6px;">
+    </div>
+
+    <div style="margin-top:20px; text-align:right;">
+        <button id="btnAnnuler">Annuler</button>
+        <button id="btnValider">Valider</button>
+    </div>
+</div>
 </body>
 </html>
