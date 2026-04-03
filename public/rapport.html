@@ -94,7 +94,27 @@
     console.log('✅ INITIALISATION COMPLÈTE');
     console.log('═══════════════════════════════════════════');
   </script>
-  
+
+<!-- Détection d’un rapport importé -->
+<script>
+    const rapportImporte = sessionStorage.getItem("rapportImporte");
+
+    if (rapportImporte) {
+        console.log("📥 Rapport importé détecté, chargement...");
+        const data = JSON.parse(rapportImporte);
+
+        // Appel de la fonction de chargement
+        if (typeof chargerRapportDepuisJSON === "function") {
+            chargerRapportDepuisJSON(data);
+        } else {
+            console.warn("⚠️ Fonction chargerRapportDepuisJSON non définie");
+        }
+
+        // Nettoyage
+        sessionStorage.removeItem("rapportImporte");
+    }
+</script>
+
   <style>
   /* Basic layout */
   .logo-container {
