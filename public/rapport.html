@@ -10,25 +10,7 @@
     console.log('═══════════════════════════════════════════');
     console.log('[RAPPORT.HTML] Initialisation en cours...');
     console.log('═══════════════════════════════════════════');
-    
-    // 1. Définir CPSS stub IMMÉDIATEMENT AVANT TOUT
-    window.CPSS = window.CPSS || {
-      requireAuth: function() { return Promise.resolve('editor'); },
-      loadRapports: function() { return Promise.resolve([]); },
-      loadRapport: function(cle) { 
-        const data = localStorage.getItem('rapport_' + cle);
-        return Promise.resolve(data ? JSON.parse(data) : null);
-      },
-      saveRapport: function(cle, donnees) {
-        localStorage.setItem('rapport_' + cle, JSON.stringify(donnees));
-        return Promise.resolve();
-      },
-      deleteRapport: function(cle) {
-        localStorage.removeItem('rapport_' + cle);
-        return Promise.resolve();
-      }
-    };
-    console.log('✅ [CPSS] Initialisé:', window.CPSS);
+    console.log('✅ [CPSS] Sera chargé via /api.js');
     
     // 2. Définir functions QR IMMÉDIATEMENT EN GLOBAL
     window.qrScannerPieces = null;
@@ -224,8 +206,6 @@
       background-color: #2a2a2a !important;
       color: #ffffff !important;
   }
-}
-    @media screen {
 
   /* Toute la zone basse (no-print) passe en sombre */
   .no-print {
@@ -300,8 +280,9 @@
   th, td {
       border: 1px solid #444;
   }
-}
+
 </style>
+  
   
   <script src="/api.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
@@ -342,7 +323,7 @@
       <p>
         11 rue de la Durance - 67100 Strasbourg<br>
         Tel: 03 88 93 10 01 <br>
-        contact@cpsseurope.com
+        <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="1a7975746e7b796e5a796a69697f6f68756a7f34797577">[email&#160;protected]</a>
       </p>
     </div>
   </div>
@@ -529,8 +510,15 @@
   <div id="descriptif" contenteditable="true" tabindex="0"></div>
   </div>
 <div class="no-print" style="text-align:right;padding:8px 20px;background:#f5f5f5;border-bottom:1px solid #ddd;">
-  <button onclick="window.location.href='/menu.html'" style="background:#eee;border:none;padding:6px 12px;border-radius:4px;cursor:pointer;margin-right:6px;">🏠 Menu</button>
-  <button onclick="fetch('/api/logout',{method:'POST'}).then(()=>window.location.href='/')" style="background:#eee;border:none;padding:6px 12px;border-radius:4px;cursor:pointer;">🚪 Déconnexion</button>
+    <button onclick="window.location.href='menu.html'" 
+            style="background:#eee;border:none;padding:6px 12px;border-radius:4px;cursor:pointer;margin-right:6px;">
+        Retour menu
+    </button>
+
+    <button onclick="window.location.href='logout.html'" 
+            style="background:#eee;border:none;padding:6px 12px;border-radius:4px;cursor:pointer;">
+        Déconnexion
+    </button>
 </div>
 
 <div class="no-print" style="text-align:center; margin-top:20px; font-family:Arial,sans-serif;">
@@ -551,13 +539,16 @@
         <option value="">-- Sélectionner un rapport --</option>
       </select>
       <button onclick="chargerRapport()" style="padding:6px 14px; background:#1565c0; color:white; border:none; border-radius:4px; cursor:pointer;">📂 Charger</button>
+      <button onclick="ouvrirFichierJSON()" style="padding:6px 14px; background:#00897b; color:white; border:none; border-radius:4px; cursor:pointer;">📁 Importer JSON</button>
       <button class="admin-only no-print" onclick="supprimerRapport()" style="padding:6px 14px; background:#c62828; color:white; border:none; border-radius:4px; cursor:pointer;">🗑️ Supprimer</button>
     </div>
 
     <!-- Autres actions -->
     <div style="display:flex; gap:8px; justify-content:center; flex-wrap:wrap;">
       <button onclick="exporterPDF()" style="padding:6px 14px; background:#555; color:white; border:none; border-radius:4px; cursor:pointer;">📄 Exporter en PDF</button>
-      <button class="admin-only no-print" onclick="sauvegarderDansFichierHTML()" style="padding:6px 14px; background:#6a1b9a; color:white; border:none; border-radius:4px; cursor:pointer;">📄💾 Sauvegarder fichier HTML</button>
+      <button class="admin-only no-print" onclick="sauvegarderDansOneDrive()" style="padding:6px 14px; background:#6a1b9a; color:white; border:none; border-radius:4px; cursor:pointer;">
+    📄💾 Sauvegarder dans OneDrive
+</button>
       <button class="admin-only no-print" onclick="exporterICS()">Exporter vers Outlook (.ics)</button>
       <button class="admin-only no-print" onclick="viderDonnees()" style="padding:6px 14px; background:#888; color:white; border:none; border-radius:4px; cursor:pointer;">🧹 Nouveau rapport vierge</button>
     </div>
@@ -565,7 +556,7 @@
 </div>
   <!-- Scripts -->
 <!-- Librairie html2pdf -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 <script>
@@ -697,46 +688,51 @@ tempSpans.forEach(span => span.remove());
 </script>
 
 <script>
-// Crée et télécharge une copie du fichier HTML avec les données du formulaire embarquées
-function sauvegarderDansFichierHTML() {
+async function sauvegarderDansOneDrive() {
   try {
-    // Collecte des éléments dans l'ordre du document
+    // 1) Collecter toutes les données du formulaire
     const els = Array.from(document.querySelectorAll('input, textarea, [contenteditable], canvas'));
-    const saved = els.map(el => {
+    const data = {};
+
+    els.forEach((el, i) => {
+      const key = el.id || `field_${i}`;
+
       if (el.tagName === 'CANVAS') {
-        try { return { tag: 'canvas', data: el.toDataURL() }; } catch (e) { return { tag: 'canvas', data: null }; }
+        try {
+          data[key] = el.toDataURL();
+        } catch {
+          data[key] = null;
+        }
+      } else if (el.tagName === 'INPUT') {
+        if (el.type === 'checkbox' || el.type === 'radio') {
+          data[key] = el.checked;
+        } else {
+          data[key] = el.value;
+        }
+      } else if (el.tagName === 'TEXTAREA') {
+        data[key] = el.value;
+      } else if (el.hasAttribute('contenteditable')) {
+        data[key] = el.innerHTML;
       }
-      if (el.tagName === 'INPUT') {
-        if (el.type === 'checkbox' || el.type === 'radio') return { tag: 'input', type: el.type, checked: el.checked };
-        return { tag: 'input', type: el.type, value: el.value };
-      }
-      if (el.tagName === 'TEXTAREA') return { tag: 'textarea', value: el.value };
-      if (el.hasAttribute('contenteditable')) return { tag: 'content', html: el.innerHTML };
-      return { tag: el.tagName.toLowerCase() };
     });
 
-    // Prépare le script d'injection qui restaurera les valeurs à l'ouverture du fichier
-    const injectScript = `\n<script>window.__savedFormData = ${JSON.stringify(saved)};window.addEventListener('DOMContentLoaded',function(){try{const els=document.querySelectorAll('input, textarea, [contenteditable], canvas'); Array.from(els).forEach((el,i)=>{const d=window.__savedFormData[i]; if(!d) return; if(d.tag==='canvas' && d.data){ try{ const img=new Image(); img.onload=function(){ try{ if(el.tagName==='CANVAS'){ el.width = img.width; el.height = img.height; const ctx = el.getContext('2d'); ctx.clearRect(0,0,el.width,el.height); ctx.drawImage(img,0,0); } }catch(e){} }; img.src=d.data; }catch(e){} } else if(d.tag==='input'){ if(d.type==='checkbox' || d.type==='radio'){ el.checked = !!d.checked; if(el.checked) el.setAttribute('checked','checked'); else el.removeAttribute('checked'); } else { el.value = d.value || ''; el.setAttribute('value', el.value); } } else if(d.tag==='textarea'){ el.value = d.value || ''; el.innerText = d.value || ''; } else if(d.tag==='content'){ el.innerHTML = d.html || ''; } });}catch(e){} });<\/script>\n`;
+    // 2) Ouvrir un sélecteur de dossier OneDrive
+    const folderHandle = await window.showDirectoryPicker();
 
-    // Prend le HTML actuel et insère le script avant </body>
-    let html = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
-    if (html.lastIndexOf('</body>') !== -1) {
-      html = html.slice(0, html.lastIndexOf('</body>')) + injectScript + '</body>' + html.slice(html.lastIndexOf('</body>') + 7);
-    } else {
-      html += injectScript;
-    }
+    // 3) Nom du fichier
+    const date = new Date().toISOString().split('T')[0];
+    const fileName = `${date}-rapport.json`;
 
-    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'rapport-sauvegarde.html';
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(() => { try { document.body.removeChild(a); URL.revokeObjectURL(url); } catch (e) {} }, 500);
+    // 4) Écrire le fichier JSON dans le dossier choisi
+    const fileHandle = await folderHandle.getFileHandle(fileName, { create: true });
+    const writable = await fileHandle.createWritable();
+    await writable.write(JSON.stringify(data, null, 2));
+    await writable.close();
+
+    alert("Rapport sauvegardé dans OneDrive !");
   } catch (e) {
-    alert('Erreur lors de la préparation du fichier HTML : ' + e.message);
     console.error(e);
+    alert("Erreur lors de la sauvegarde : " + e.message);
   }
 }
 </script>
@@ -886,44 +882,138 @@ function rafraichirListe() {
       return Array.from(document.querySelectorAll('input, textarea, #descriptif'));
     }
 
-    function collecterDonnees() {
-      const donnees = {};
-      getAllInputs().forEach((el, i) => {
-        if (el.type === 'checkbox') {
-          donnees[el.id || i] = el.checked;
-        } else if (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT') {
-          donnees[el.id || el.name || i] = el.value;
-        } else if (el.id === 'descriptif') {
-          donnees['descriptif'] = el.innerHTML;
-        }
-      });
-      const canvas = document.getElementById('signatureCanvas');
-      if (canvas) donnees['signature'] = canvas.toDataURL();
-      return donnees;
+function collecterDonnees() {
+    const data = {};
+
+    // --- Type d’intervention ---
+    data.install    = document.getElementById("install").checked;
+    data.depannage  = document.getElementById("depannage").checked;
+    data.entretien  = document.getElementById("entretien").checked;
+    data.visite     = document.getElementById("visite").checked;
+
+    // --- Coordonnées client ---
+    data.societe     = document.getElementById("societe").value;
+    data.adresse     = document.getElementById("adresse").value;
+    data.contactName = document.getElementById("contactName").value;
+
+    // --- Tableau des trajets ---
+    data.lignes = [];
+    document.querySelectorAll(".ligne-saisie").forEach((tr) => {
+        const tds = tr.querySelectorAll("input");
+
+        data.lignes.push({
+            date:        tds[0].value,
+            trajet:      tds[1].value,
+            debut:       tds[2].value,
+            pause:       tds[3].value,
+            fin:         tds[4].value,
+            km:          tds[5].value,
+            repas:       tds[6].value,
+            hotel:       tds[7].value
+        });
+    });
+
+    // --- Totaux ---
+    data["total-trajet"] = document.getElementById("total-trajet").value;
+    data["total-temps"]  = document.getElementById("total-temps").value;
+    data["total-km"]     = document.getElementById("total-km").value;
+    data["total-repas"]  = document.getElementById("total-repas").value;
+    data["total-hotel"]  = document.getElementById("total-hotel").value;
+
+    // --- Pièces ---
+    data.piecesChanged  = document.getElementById("piecesChanged").value;
+    data.piecesToChange = document.getElementById("piecesToChange").value;
+
+    // --- Date ---
+    data["date-signature"] = document.getElementById("date-signature").value;
+
+    // --- Descriptif ---
+    data.descriptif = document.getElementById("descriptif").innerHTML;
+
+    // --- Champs d’identification ---
+    data["_save_client"]  = document.getElementById("save-client").value;
+    data["_save_semaine"] = document.getElementById("save-semaine").value;
+    data["_save_annee"]   = document.getElementById("save-annee").value;
+
+    // --- Signature ---
+    const canvas = document.getElementById("signatureCanvas");
+    if (canvas) {
+        data.signature = canvas.toDataURL();
     }
 
-    function appliquerDonnees(donnees) {
-      getAllInputs().forEach((el, i) => {
-        if (el.type === 'checkbox') {
-          el.checked = !!donnees[el.id || i];
-        } else if (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT') {
-          el.value = donnees[el.id || el.name || i] || '';
-        } else if (el.id === 'descriptif') {
-          el.innerHTML = donnees['descriptif'] || '';
-        }
-      });
-      const canvas = document.getElementById('signatureCanvas');
-      if (canvas && donnees['signature']) {
-        const ctx = canvas.getContext('2d');
-        const img = new Image();
-        img.onload = function() {
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          ctx.drawImage(img, 0, 0);
-        };
-        img.src = donnees['signature'];
-      }
-      calculerTotauxEtTemps();
+    return data;
+}
+
+function appliquerDonnees(data) {
+
+    // --- Type d’intervention ---
+    document.getElementById("install").checked    = !!data.install;
+    document.getElementById("depannage").checked  = !!data.depannage;
+    document.getElementById("entretien").checked  = !!data.entretien;
+    document.getElementById("visite").checked     = !!data.visite;
+
+    // --- Coordonnées client ---
+    document.getElementById("societe").value     = data.societe     || "";
+    document.getElementById("adresse").value     = data.adresse     || "";
+    document.getElementById("contactName").value = data.contactName || "";
+
+    // --- Tableau des trajets ---
+    if (Array.isArray(data.lignes)) {
+        const trs = document.querySelectorAll(".ligne-saisie");
+
+        trs.forEach((tr, i) => {
+            const inputs = tr.querySelectorAll("input");
+            const ligne = data.lignes[i] || {};
+
+            inputs[0].value = ligne.date   || "";
+            inputs[1].value = ligne.trajet || "";
+            inputs[2].value = ligne.debut  || "";
+            inputs[3].value = ligne.pause  || "";
+            inputs[4].value = ligne.fin    || "";
+            inputs[5].value = ligne.km     || "";
+            inputs[6].value = ligne.repas  || "";
+            inputs[7].value = ligne.hotel  || "";
+        });
     }
+
+    // --- Totaux ---
+    document.getElementById("total-trajet").value = data["total-trajet"] || "";
+    document.getElementById("total-temps").value  = data["total-temps"]  || "";
+    document.getElementById("total-km").value     = data["total-km"]     || "";
+    document.getElementById("total-repas").value  = data["total-repas"]  || "";
+    document.getElementById("total-hotel").value  = data["total-hotel"]  || "";
+
+    // --- Pièces ---
+    document.getElementById("piecesChanged").value  = data.piecesChanged  || "";
+    document.getElementById("piecesToChange").value = data.piecesToChange || "";
+
+    // --- Date ---
+    document.getElementById("date-signature").value = data["date-signature"] || "";
+
+    // --- Descriptif ---
+    document.getElementById("descriptif").innerHTML = data.descriptif || "";
+
+    // --- Champs d’identification ---
+    document.getElementById("save-client").value  = data["_save_client"]  || "";
+    document.getElementById("save-semaine").value = data["_save_semaine"] || "";
+    document.getElementById("save-annee").value   = data["_save_annee"]   || "";
+
+    // --- Signature ---
+    if (data.signature) {
+        const canvas = document.getElementById("signatureCanvas");
+        const ctx = canvas.getContext("2d");
+        const img = new Image();
+        img.onload = () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        };
+        img.src = data.signature;
+    }
+
+    if (typeof calculerTotauxEtTemps === "function") {
+        calculerTotauxEtTemps();
+    }
+}
 
 function sauvegarderDonnees() {
   const client  = document.getElementById('save-client').value.trim();
@@ -937,9 +1027,6 @@ function sauvegarderDonnees() {
 
   const cle = getCleRapport(client, semaine, annee);
   const donnees = collecterDonnees();
-  donnees['_save_client']  = client;
-  donnees['_save_semaine'] = semaine;
-  donnees['_save_annee']   = annee;
 
   if (typeof CPSS !== 'undefined' && CPSS.saveRapport) {
     CPSS.saveRapport(cle, donnees).then(() => {
@@ -1051,30 +1138,27 @@ async function supprimerRapport() {
 function nettoyerCalendrierPourRapport(d) {
   if (!d) return;
 
-  let joursTerrain   = JSON.parse(localStorage.getItem("joursTerrain")   || "{}");
-  let joursTrajet    = JSON.parse(localStorage.getItem("joursTrajet")    || "{}");
   let heuresTerrain  = JSON.parse(localStorage.getItem("heuresTerrain")  || "{}");
   let heuresTrajet   = JSON.parse(localStorage.getItem("heuresTrajet")   || "{}");
+  let joursTerrain   = JSON.parse(localStorage.getItem("joursTerrain")   || "{}");
+  let joursTrajet    = JSON.parse(localStorage.getItem("joursTrajet")    || "{}");
 
-  // On parcourt toutes les valeurs du rapport
-  Object.values(d).forEach(val => {
+  // Les dates à nettoyer sont dans les champs embarqués lors de la sauvegarde
+  const datesT  = d._heuresTerrain ? Object.keys(d._heuresTerrain) : [];
+  const datesTr = d._heuresTrajet  ? Object.keys(d._heuresTrajet)  : [];
+  const toutesLesDates = [...new Set([...datesT, ...datesTr])];
 
-    // Si la valeur ressemble à une date YYYY-MM-DD
-    if (typeof val === "string" && /^\d{4}-\d{2}-\d{2}$/.test(val)) {
-
-      // 🔥 On supprime ce jour du calendrier
-      delete joursTerrain[val];
-      delete joursTrajet[val];
-      delete heuresTerrain[val];
-      delete heuresTrajet[val];
-    }
+  toutesLesDates.forEach(dateStr => {
+    delete heuresTerrain[dateStr];
+    delete heuresTrajet[dateStr];
+    delete joursTerrain[dateStr];
+    delete joursTrajet[dateStr];
   });
 
-  // On sauvegarde l'état nettoyé
-  localStorage.setItem("joursTerrain",   JSON.stringify(joursTerrain));
-  localStorage.setItem("joursTrajet",    JSON.stringify(joursTrajet));
   localStorage.setItem("heuresTerrain",  JSON.stringify(heuresTerrain));
   localStorage.setItem("heuresTrajet",   JSON.stringify(heuresTrajet));
+  localStorage.setItem("joursTerrain",   JSON.stringify(joursTerrain));
+  localStorage.setItem("joursTrajet",    JSON.stringify(joursTrajet));
 }
 
     function viderDonnees() {
@@ -1588,7 +1672,16 @@ document.addEventListener("input", calculerHeuresTerrain);
 // 🔥 Recalcule automatiquement au chargement de la page
 document.addEventListener("DOMContentLoaded", calculerHeuresTerrain);
  
-</script>
-  
-</body>
-</html>
+async function ouvrirFichierJSON() {
+    try {
+        const [fileHandle] = await window.showOpenFilePicker({
+            startIn: "documents",
+            types: [{
+                description: "Rapports CPSS",
+                accept: { "application/json": [".json"] }
+            }]
+        });
+
+        const file = await fileHandle.getFile();
+        const text = await file.text();
+        const data = JSON.pars

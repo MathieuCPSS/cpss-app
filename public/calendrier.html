@@ -377,11 +377,12 @@ function genererCalendrier() {
         `Jours travaillés : ${joursTravailles} / 214<br>Jours restants : ${214 - joursTravailles}`;
 }
 
-genererCalendrier();
+// Sera appelé après sync serveur (voir syncDepuisServeurEtGenerer ci-dessous)
 
 </script>
 
 <!-- Librairies propres -->
+<script src="/api.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
@@ -631,5 +632,51 @@ function appliquerConge(debut, fin) {
 }
         
     </script>
+
+<!-- ── Synchronisation serveur → localStorage → calendrier ── -->
+<script>
+async function syncDepuisServeurEtGenerer() {
+  if (typeof CPSS === 'undefined') {
+    genererCalendrier();
+    return;
+  }
+
+  try {
+    const liste = await CPSS.loadRapports();
+
+    for (const item of liste) {
+      const donnees = await CPSS.loadRapport(item.key);
+      if (!donnees) continue;
+
+      if (donnees._heuresTerrain) {
+        const existing = JSON.parse(localStorage.getItem("heuresTerrain") || "{}");
+        Object.assign(existing, donnees._heuresTerrain);
+        localStorage.setItem("heuresTerrain", JSON.stringify(existing));
+      }
+      if (donnees._heuresTrajet) {
+        const existing = JSON.parse(localStorage.getItem("heuresTrajet") || "{}");
+        Object.assign(existing, donnees._heuresTrajet);
+        localStorage.setItem("heuresTrajet", JSON.stringify(existing));
+      }
+      if (donnees._joursTerrain) {
+        const existing = JSON.parse(localStorage.getItem("joursTerrain") || "{}");
+        Object.assign(existing, donnees._joursTerrain);
+        localStorage.setItem("joursTerrain", JSON.stringify(existing));
+      }
+      if (donnees._joursTrajet) {
+        const existing = JSON.parse(localStorage.getItem("joursTrajet") || "{}");
+        Object.assign(existing, donnees._joursTrajet);
+        localStorage.setItem("joursTrajet", JSON.stringify(existing));
+      }
+    }
+  } catch (e) {
+    console.warn('[Calendrier] Sync serveur échouée, données locales utilisées :', e);
+  }
+
+  genererCalendrier();
+}
+
+syncDepuisServeurEtGenerer();
+</script>
 </body>
 </html>

@@ -105,19 +105,21 @@ async function loadRapports() {
       const r = await fetch('/api/rapports');
       if (r.ok) {
         const data = await r.json();
-
-        // ⚠️ AJOUT CRUCIAL : si l’API renvoie vide → fallback local
         if (Object.keys(data).length > 0) {
           Object.keys(data).forEach(k => {
             localStorage.setItem('rapportCPSS_' + k, JSON.stringify(data[k]));
           });
+          showStatus('✅ Rapports synchronisés', '#2e7d32');
           return Object.keys(data).map(k => ({ key: k, label: nomAffichage(k) }));
         }
+        showStatus('⚠️ Serveur vide — données locales', '#e65100');
       }
     } catch {}
+  } else {
+    showStatus('⚠️ Mode hors-ligne — données locales', '#c62828');
   }
 
-  // --- Fallback local ---
+  // Fallback local
   const keys = [];
   for (let i = 0; i < localStorage.length; i++) {
     const k = localStorage.key(i);
