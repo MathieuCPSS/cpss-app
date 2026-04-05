@@ -11,24 +11,6 @@
     console.log('[RAPPORT.HTML] Initialisation en cours...');
     console.log('═══════════════════════════════════════════');
     
-    // 1. Définir CPSS stub IMMÉDIATEMENT AVANT TOUT
-    window.CPSS = window.CPSS || {
-      requireAuth: function() { return Promise.resolve('editor'); },
-      loadRapports: function() { return Promise.resolve([]); },
-      loadRapport: function(cle) { 
-        const data = localStorage.getItem('rapport_' + cle);
-        return Promise.resolve(data ? JSON.parse(data) : null);
-      },
-      saveRapport: function(cle, donnees) {
-        localStorage.setItem('rapport_' + cle, JSON.stringify(donnees));
-        return Promise.resolve();
-      },
-      deleteRapport: function(cle) {
-        localStorage.removeItem('rapport_' + cle);
-        return Promise.resolve();
-      }
-    };
-    console.log('✅ [CPSS] Initialisé:', window.CPSS);
     
     // 2. Définir functions QR IMMÉDIATEMENT EN GLOBAL
     window.qrScannerPieces = null;
@@ -302,6 +284,7 @@
 </style>
   
   
+  <script src="/api.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
   <script>
     // Global error handler
