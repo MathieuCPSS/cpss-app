@@ -136,6 +136,9 @@ async function deleteRapport(key) {
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
+// Indispensable sur Render : le serveur est derrière un proxy HTTPS
+app.set('trust proxy', 1);
+
 app.use(session({
   secret: SESSION_SECRET,
   resave: false,
@@ -143,8 +146,8 @@ app.use(session({
   cookie: {
     maxAge: 7 * 24 * 60 * 60 * 1000,
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax'
+    secure: true,    // Render est toujours en HTTPS
+    sameSite: 'none' // Nécessaire pour mobile/tablette derrière proxy
   }
 }));
 
