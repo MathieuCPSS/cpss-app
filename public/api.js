@@ -129,7 +129,7 @@ async function loadRapports() {
     }
   }
   return keys;
-}}
+}
 
   async function loadRapport(key) {
     await checkOnline();
