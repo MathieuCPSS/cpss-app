@@ -10,7 +10,25 @@
     console.log('═══════════════════════════════════════════');
     console.log('[RAPPORT.HTML] Initialisation en cours...');
     console.log('═══════════════════════════════════════════');
-    console.log('✅ [CPSS] Sera chargé via /api.js');
+    
+    // 1. Définir CPSS stub IMMÉDIATEMENT AVANT TOUT
+    window.CPSS = window.CPSS || {
+      requireAuth: function() { return Promise.resolve('editor'); },
+      loadRapports: function() { return Promise.resolve([]); },
+      loadRapport: function(cle) { 
+        const data = localStorage.getItem('rapport_' + cle);
+        return Promise.resolve(data ? JSON.parse(data) : null);
+      },
+      saveRapport: function(cle, donnees) {
+        localStorage.setItem('rapport_' + cle, JSON.stringify(donnees));
+        return Promise.resolve();
+      },
+      deleteRapport: function(cle) {
+        localStorage.removeItem('rapport_' + cle);
+        return Promise.resolve();
+      }
+    };
+    console.log('✅ [CPSS] Initialisé:', window.CPSS);
     
     // 2. Définir functions QR IMMÉDIATEMENT EN GLOBAL
     window.qrScannerPieces = null;
@@ -284,7 +302,6 @@
 </style>
   
   
-  <script src="/api.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
   <script>
     // Global error handler
@@ -323,7 +340,7 @@
       <p>
         11 rue de la Durance - 67100 Strasbourg<br>
         Tel: 03 88 93 10 01 <br>
-        <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="1a7975746e7b796e5a796a69697f6f68756a7f34797577">[email&#160;protected]</a>
+        <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="65060a0b1104061125061516160010170a15004b060a08">[email&#160;protected]</a>
       </p>
     </div>
   </div>
@@ -772,11 +789,14 @@ if (trajet) {
         const fin = ligne.querySelector(".fin")?.value;
 
         if (debut && fin) {
-          const tDebut = new Date("1970-01-01T" + debut);
-          const tFin = new Date("1970-01-01T" + fin);
-          const tPause = pause ? new Date("1970-01-01T" + pause) : new Date("1970-01-01T00:00");
-
-          const minutesTravail = (tFin - tDebut - (tPause - new Date("1970-01-01T00:00"))) / 60000;
+          const [hD, mD] = debut.split(':').map(Number);
+          const [hF, mF] = fin.split(':').map(Number);
+          const minutesDebut = hD * 60 + mD;
+          const minutesFin   = hF * 60 + mF;
+          // La pause est une DURÉE (ex: 00:30 = 30 min), pas une heure
+          const [hP, mP] = (pause || '00:00').split(':').map(Number);
+          const minutesPause = hP * 60 + mP;
+          const minutesTravail = minutesFin - minutesDebut - minutesPause;
           totalMinutesTravail += Math.max(0, minutesTravail);
         }
       });
@@ -1138,27 +1158,30 @@ async function supprimerRapport() {
 function nettoyerCalendrierPourRapport(d) {
   if (!d) return;
 
-  let heuresTerrain  = JSON.parse(localStorage.getItem("heuresTerrain")  || "{}");
-  let heuresTrajet   = JSON.parse(localStorage.getItem("heuresTrajet")   || "{}");
   let joursTerrain   = JSON.parse(localStorage.getItem("joursTerrain")   || "{}");
   let joursTrajet    = JSON.parse(localStorage.getItem("joursTrajet")    || "{}");
+  let heuresTerrain  = JSON.parse(localStorage.getItem("heuresTerrain")  || "{}");
+  let heuresTrajet   = JSON.parse(localStorage.getItem("heuresTrajet")   || "{}");
 
-  // Les dates à nettoyer sont dans les champs embarqués lors de la sauvegarde
-  const datesT  = d._heuresTerrain ? Object.keys(d._heuresTerrain) : [];
-  const datesTr = d._heuresTrajet  ? Object.keys(d._heuresTrajet)  : [];
-  const toutesLesDates = [...new Set([...datesT, ...datesTr])];
+  // On parcourt toutes les valeurs du rapport
+  Object.values(d).forEach(val => {
 
-  toutesLesDates.forEach(dateStr => {
-    delete heuresTerrain[dateStr];
-    delete heuresTrajet[dateStr];
-    delete joursTerrain[dateStr];
-    delete joursTrajet[dateStr];
+    // Si la valeur ressemble à une date YYYY-MM-DD
+    if (typeof val === "string" && /^\d{4}-\d{2}-\d{2}$/.test(val)) {
+
+      // 🔥 On supprime ce jour du calendrier
+      delete joursTerrain[val];
+      delete joursTrajet[val];
+      delete heuresTerrain[val];
+      delete heuresTrajet[val];
+    }
   });
 
-  localStorage.setItem("heuresTerrain",  JSON.stringify(heuresTerrain));
-  localStorage.setItem("heuresTrajet",   JSON.stringify(heuresTrajet));
+  // On sauvegarde l'état nettoyé
   localStorage.setItem("joursTerrain",   JSON.stringify(joursTerrain));
   localStorage.setItem("joursTrajet",    JSON.stringify(joursTrajet));
+  localStorage.setItem("heuresTerrain",  JSON.stringify(heuresTerrain));
+  localStorage.setItem("heuresTrajet",   JSON.stringify(heuresTrajet));
 }
 
     function viderDonnees() {
@@ -1624,46 +1647,55 @@ function toMinutes(hm) {
 function calculerHeuresTerrain() {
     const lignes = document.querySelectorAll(".ligne-saisie");
 
-    let heuresTerrain = {};
-    let joursTerrain = {};
+    // On lit le localStorage GLOBAL existant (données des autres rapports)
+    let heuresTerrain = JSON.parse(localStorage.getItem("heuresTerrain") || "{}");
+    let joursTerrain  = JSON.parse(localStorage.getItem("joursTerrain")  || "{}");
+    let heuresTrajet  = JSON.parse(localStorage.getItem("heuresTrajet")  || "{}");
+    let joursTrajet   = JSON.parse(localStorage.getItem("joursTrajet")   || "{}");
 
-    let heuresTrajet = {};
-    let joursTrajet = {};
-
+    // On supprime d'abord les dates du rapport COURANT uniquement
+    // (pour éviter les fantômes si une date a été modifiée ou effacée)
     lignes.forEach(ligne => {
         const date = ligne.querySelector('input[type="date"]').value;
+        if (date) {
+            delete heuresTerrain[date];
+            delete joursTerrain[date];
+            delete heuresTrajet[date];
+            delete joursTrajet[date];
+        }
+    });
 
-        // --- Terrain ---
+    // Puis on recalcule et ré-injecte les données du rapport courant
+    lignes.forEach(ligne => {
+        const date  = ligne.querySelector('input[type="date"]').value;
         const debut = ligne.querySelector(".debut").value;
         const pause = ligne.querySelector(".pause").value;
-        const fin = ligne.querySelector(".fin").value;
+        const fin   = ligne.querySelector(".fin").value;
 
         if (date && debut && fin) {
-            const minutes = toMinutes(fin) - toMinutes(debut) - toMinutes(pause);
+            // pause = durée (pas une heure), ex: 00:30 = 30 min
+            const minutes = toMinutes(fin) - toMinutes(debut) - toMinutes(pause || '00:00');
             if (minutes > 0) {
                 heuresTerrain[date] = minutes;
-                joursTerrain[date] = true;
+                joursTerrain[date]  = true;
             }
         }
 
-        // --- Trajet ---
         const trajet = ligne.querySelector(".temps-trajet")?.value;
-
         if (date && trajet) {
             const minutesTrajet = toMinutes(trajet);
             if (minutesTrajet > 0) {
                 heuresTrajet[date] = minutesTrajet;
-                joursTrajet[date] = true;
+                joursTrajet[date]  = true;
             }
         }
     });
 
-    // Sauvegarde dans localStorage
+    // Sauvegarde dans localStorage (données globales préservées)
     localStorage.setItem("heuresTerrain", JSON.stringify(heuresTerrain));
-    localStorage.setItem("joursTerrain", JSON.stringify(joursTerrain));
-
-    localStorage.setItem("heuresTrajet", JSON.stringify(heuresTrajet));
-    localStorage.setItem("joursTrajet", JSON.stringify(joursTrajet));
+    localStorage.setItem("joursTerrain",  JSON.stringify(joursTerrain));
+    localStorage.setItem("heuresTrajet",  JSON.stringify(heuresTrajet));
+    localStorage.setItem("joursTrajet",   JSON.stringify(joursTrajet));
 }
 
 // 🔥 Recalcule automatiquement à chaque saisie

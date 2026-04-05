@@ -105,21 +105,19 @@ async function loadRapports() {
       const r = await fetch('/api/rapports');
       if (r.ok) {
         const data = await r.json();
+
+        // ⚠️ AJOUT CRUCIAL : si l’API renvoie vide → fallback local
         if (Object.keys(data).length > 0) {
           Object.keys(data).forEach(k => {
             localStorage.setItem('rapportCPSS_' + k, JSON.stringify(data[k]));
           });
-          showStatus('✅ Rapports synchronisés', '#2e7d32');
           return Object.keys(data).map(k => ({ key: k, label: nomAffichage(k) }));
         }
-        showStatus('⚠️ Serveur vide — données locales', '#e65100');
       }
     } catch {}
-  } else {
-    showStatus('⚠️ Mode hors-ligne — données locales', '#c62828');
   }
 
-  // Fallback local
+  // --- Fallback local ---
   const keys = [];
   for (let i = 0; i < localStorage.length; i++) {
     const k = localStorage.key(i);
@@ -149,13 +147,31 @@ async function loadRapports() {
 
 async function saveRapport(key, data) {
 
-    // 🔥 AJOUT : on embarque les données du calendrier dans le rapport
-    data._joursTerrain  = JSON.parse(localStorage.getItem("joursTerrain")  || "{}");
-    data._joursTrajet   = JSON.parse(localStorage.getItem("joursTrajet")   || "{}");
-    data._heuresTerrain = JSON.parse(localStorage.getItem("heuresTerrain") || "{}");
-    data._heuresTrajet  = JSON.parse(localStorage.getItem("heuresTrajet")  || "{}");
+    // On embarque UNIQUEMENT les dates de ce rapport dans les champs _heures*
+    // (pas tout le localStorage global qui contient les données des autres rapports)
+    const heuresTerrain = JSON.parse(localStorage.getItem("heuresTerrain") || "{}");
+    const heuresTrajet  = JSON.parse(localStorage.getItem("heuresTrajet")  || "{}");
+    const joursTerrain  = JSON.parse(localStorage.getItem("joursTerrain")  || "{}");
+    const joursTrajet   = JSON.parse(localStorage.getItem("joursTrajet")   || "{}");
 
-    // 🔥 Sauvegarde locale (inchangée)
+    // Filtrer uniquement les dates présentes dans les lignes du rapport
+    const datesRapport = (data.lignes || [])
+      .map(l => l.date)
+      .filter(d => d && d.length === 10); // format YYYY-MM-DD
+
+    data._heuresTerrain = {};
+    data._heuresTrajet  = {};
+    data._joursTerrain  = {};
+    data._joursTrajet   = {};
+
+    datesRapport.forEach(date => {
+      if (heuresTerrain[date] !== undefined) data._heuresTerrain[date] = heuresTerrain[date];
+      if (heuresTrajet[date]  !== undefined) data._heuresTrajet[date]  = heuresTrajet[date];
+      if (joursTerrain[date]  !== undefined) data._joursTerrain[date]  = joursTerrain[date];
+      if (joursTrajet[date]   !== undefined) data._joursTrajet[date]   = joursTrajet[date];
+    });
+
+    // Sauvegarde locale
     localStorage.setItem('rapportCPSS_' + key, JSON.stringify(data));
 
     await checkOnline();
