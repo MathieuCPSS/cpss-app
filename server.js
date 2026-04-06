@@ -108,10 +108,9 @@ async function getRapport(key) {
 
 async function setRapport(key, data) {
   if (db) {
-    // replaceOne pour écraser le document entier (pas $set qui fusionne)
-    await db.collection('rapports').replaceOne(
+    await db.collection('rapports').updateOne(
       { _id: key },
-      { ...data, _id: key },
+      { $set: { ...data, _id: key } },
       { upsert: true }
     );
     return;
@@ -137,9 +136,6 @@ async function deleteRapport(key) {
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Indispensable sur Render : le serveur est derrière un proxy HTTPS
-app.set('trust proxy', 1);
-
 app.use(session({
   secret: SESSION_SECRET,
   resave: false,
@@ -147,8 +143,8 @@ app.use(session({
   cookie: {
     maxAge: 7 * 24 * 60 * 60 * 1000,
     httpOnly: true,
-    secure: true,    // Render est toujours en HTTPS
-    sameSite: 'none' // Nécessaire pour mobile/tablette derrière proxy
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax'
   }
 }));
 
