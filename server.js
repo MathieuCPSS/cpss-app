@@ -108,9 +108,10 @@ async function getRapport(key) {
 
 async function setRapport(key, data) {
   if (db) {
-    await db.collection('rapports').updateOne(
+    // replaceOne pour écraser le document entier (pas $set qui fusionne)
+    await db.collection('rapports').replaceOne(
       { _id: key },
-      { $set: { ...data, _id: key } },
+      { ...data, _id: key },
       { upsert: true }
     );
     return;
@@ -256,6 +257,31 @@ app.delete('/api/rapports/:key', requireAdmin, async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
+app.get('/api/config', requireAuth, (req, res) => {
+  res.json({
+    t1_coeff: parseFloat(process.env.TAUX_T1_COEFF),
+    t1_max:   parseFloat(process.env.TAUX_T1_MAX),
+    t2_coeff: parseFloat(process.env.TAUX_T2_COEFF),
+    t2_max:   parseFloat(process.env.TAUX_T2_MAX),
+    t3_coeff: parseFloat(process.env.TAUX_T3_COEFF),
+    gbp_eur:  parseFloat(process.env.TAUX_GBP_EUR),
+
+    marge: {
+      seuil1: parseFloat(process.env.MARGE_SEUIL1 || '150'),
+      seuil2: parseFloat(process.env.MARGE_SEUIL2 || '800'),
+      coeff1: parseFloat(process.env.MARGE_COEFF1 || '1'),
+      coeff2: parseFloat(process.env.MARGE_COEFF2 || '1'),
+      coeff3: parseFloat(process.env.MARGE_COEFF3 || '1'),
+    },
+
+    taux: {
+      GBP: parseFloat(process.env.TAUX_GBP || '1'),
+      USD: parseFloat(process.env.TAUX_USD || '1'),
+      CHF: parseFloat(process.env.TAUX_CHF || '1'),
+    }
+  });
 });
 
 // ── Ping ──────────────────────────────────────────────────────────────
