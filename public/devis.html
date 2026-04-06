@@ -1,0 +1,1377 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CPSS — Calculateur de devis</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
+
+    :root {
+      --bg: #0f0f0f;
+      --surface: #1a1a1a;
+      --surface2: #222;
+      --border: #2e2e2e;
+      --accent: #c8a96e;
+      --accent2: #7eb8c8;
+      --text: #e8e4dc;
+      --text-muted: #888;
+      --green: #6dbf8a;
+      --red: #e07b6a;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'IBM Plex Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    header {
+      border-bottom: 1px solid var(--border);
+      padding: 18px 32px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      background: var(--surface);
+    }
+
+    header h1 {
+      font-size: 15px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    header span {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-family: 'IBM Plex Mono', monospace;
+    }
+
+    .main {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 32px 24px;
+    }
+
+    /* ── Zone de saisie ── */
+    .input-zone {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+
+    .input-zone h2 {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 16px;
+    }
+
+    .tab {
+      padding: 7px 16px;
+      font-size: 12px;
+      font-family: 'IBM Plex Mono', monospace;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-radius: 4px;
+      transition: all 0.15s;
+    }
+
+    .tab.active {
+      background: var(--accent);
+      color: var(--bg);
+      border-color: var(--accent);
+      font-weight: 500;
+    }
+
+    .tab:hover:not(.active) {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    textarea {
+      width: 100%;
+      min-height: 140px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      padding: 12px;
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    textarea:focus { border-color: var(--accent); }
+    textarea::placeholder { color: var(--text-muted); }
+
+    .file-drop {
+      border: 2px dashed var(--border);
+      border-radius: 6px;
+      padding: 40px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+    }
+
+    .file-drop:hover, .file-drop.drag-over {
+      border-color: var(--accent);
+      background: rgba(200, 169, 110, 0.05);
+    }
+
+    .file-drop input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+
+    .file-drop .icon { font-size: 32px; margin-bottom: 10px; }
+    .file-drop p { font-size: 13px; color: var(--text-muted); }
+    .file-drop p strong { color: var(--accent); }
+
+    .file-preview {
+      margin-top: 12px;
+      font-size: 12px;
+      font-family: 'IBM Plex Mono', monospace;
+      color: var(--green);
+      display: none;
+    }
+
+    /* ── Barre d'actions ── */
+    .actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 16px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: 9px 20px;
+      border: none;
+      border-radius: 4px;
+      font-size: 12px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+      letter-spacing: 0.05em;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: var(--bg);
+    }
+    .btn-primary:hover { background: #d4b87a; }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+    }
+    .btn-secondary:hover { border-color: var(--text-muted); color: var(--text); }
+
+    .btn-danger {
+      background: transparent;
+      color: var(--red);
+      border: 1px solid transparent;
+    }
+    .btn-danger:hover { border-color: var(--red); }
+
+    /* ── Taux de marge ── */
+    .taux-info {
+      font-size: 11px;
+      font-family: 'IBM Plex Mono', monospace;
+      color: var(--text-muted);
+      margin-left: auto;
+    }
+
+    .taux-info span {
+      display: inline-block;
+      padding: 3px 8px;
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      margin-left: 4px;
+    }
+
+    .taux-info span.t1 { border-color: var(--red); color: var(--red); }
+    .taux-info span.t2 { border-color: var(--accent); color: var(--accent); }
+    .taux-info span.t3 { border-color: var(--green); color: var(--green); }
+
+    /* ── Loader ── */
+    .loader {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      font-size: 12px;
+      font-family: 'IBM Plex Mono', monospace;
+      color: var(--accent);
+      padding: 12px 0;
+    }
+
+    .loader.active { display: flex; }
+
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Résultats ── */
+    .results-zone {
+      display: none;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    .results-zone.active { display: block; }
+
+    .results-header {
+      padding: 14px 24px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--surface2);
+    }
+
+    .results-header h2 {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-muted);
+    }
+
+    .results-header .summary {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .results-header .summary strong {
+      color: var(--green);
+      font-size: 14px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead th {
+      padding: 10px 16px;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-muted);
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface2);
+      font-family: 'IBM Plex Mono', monospace;
+    }
+
+    thead th.num { text-align: right; }
+
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+      transition: background 0.1s;
+    }
+
+    tbody tr:hover { background: rgba(255,255,255,0.03); }
+    tbody tr:last-child { border-bottom: none; }
+
+    tbody td {
+      padding: 11px 16px;
+      font-size: 13px;
+      vertical-align: middle;
+    }
+
+    tbody td.ref {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+
+    tbody td.prix {
+      text-align: right;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 13px;
+    }
+
+    tbody td.prix-vente {
+      text-align: right;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--accent);
+    }
+
+    .coeff-badge {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 10px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-weight: 500;
+    }
+
+    .coeff-22 { background: rgba(224,123,106,0.15); color: var(--red); }
+    .coeff-166 { background: rgba(200,169,110,0.15); color: var(--accent); }
+    .coeff-144 { background: rgba(109,191,138,0.15); color: var(--green); }
+
+    /* Input éditable dans le tableau */
+    .prix-input {
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid transparent;
+      color: inherit;
+      font-family: inherit;
+      font-size: inherit;
+      text-align: right;
+      width: 80px;
+      padding: 2px 4px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .prix-input:focus {
+      border-bottom-color: var(--accent);
+    }
+
+    /* Pied de tableau */
+    tfoot td {
+      padding: 14px 16px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 13px;
+      border-top: 2px solid var(--border);
+      background: var(--surface2);
+    }
+
+    tfoot .label { color: var(--text-muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; }
+    tfoot .total-achat { text-align: right; }
+    tfoot .total-vente { text-align: right; color: var(--accent); font-weight: 500; font-size: 15px; }
+
+    /* Erreur */
+    .error-msg {
+      display: none;
+      background: rgba(224,123,106,0.1);
+      border: 1px solid var(--red);
+      border-radius: 4px;
+      padding: 12px 16px;
+      font-size: 13px;
+      color: var(--red);
+      margin-top: 12px;
+    }
+
+    .error-msg.active { display: block; }
+
+    /* Export */
+    .export-bar {
+      padding: 12px 24px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 8px;
+      background: var(--surface2);
+    }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+      .main { padding: 16px; }
+      header { padding: 14px 16px; }
+      thead th:nth-child(1), tbody td:nth-child(1) { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>CPSS — Calculateur de devis</h1>
+  <span>v1.0 · local</span>
+</header>
+
+<div class="main">
+
+  <!-- Zone saisie -->
+  <div class="input-zone">
+    <h2>Source du devis fournisseur</h2>
+
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('paste')">📋 Coller HTML / texte</button>
+      <button class="tab" onclick="switchTab('file')">📄 PDF / Image</button>
+      <button class="tab" onclick="switchTab('manual')">✏️ Saisie manuelle</button>
+    </div>
+
+    <!-- Onglet coller -->
+    <div class="tab-content active" id="tab-paste">
+      <textarea id="pasteArea" placeholder="Collez ici le contenu HTML ou texte du devis fournisseur...&#10;&#10;Format accepté : Référence  Désignation  Qté  Prix unit.  Remise  Total&#10;Le parser détecte automatiquement les colonnes disponibles."></textarea>
+    </div>
+
+    <!-- Onglet fichier -->
+    <div class="tab-content" id="tab-file">
+      <div class="file-drop" id="fileDrop">
+        <input type="file" id="fileInput" accept=".pdf,image/*,.png,.jpg,.jpeg,.webp" onchange="handleFile(this.files[0])">
+        <div class="icon">📎</div>
+        <p><strong>Cliquez ou glissez</strong> un fichier PDF ou une image</p>
+        <p>PDF ou image — analysé localement, <strong>gratuit, aucun envoi de données</strong></p>
+        <p style="margin-top:8px; font-size:11px; color:var(--accent);">💡 Vous pouvez aussi faire <strong>Ctrl+V</strong> pour coller une capture d'écran ou une image</p>
+      </div>
+      <div class="file-preview" id="filePreview">✓ Fichier chargé : <span id="fileName"></span></div>
+    </div>
+
+    <!-- Onglet manuel -->
+    <div class="tab-content" id="tab-manual">
+      <div id="manualRows">
+        <div style="display:flex; gap:8px; margin-bottom:6px; font-size:11px; color:var(--text-muted); font-family:'IBM Plex Mono',monospace; padding: 0 2px;">
+          <span style="flex:1.2">Référence</span>
+          <span style="flex:3">Désignation</span>
+          <span style="width:60px; text-align:right;">Qté</span>
+          <span style="width:90px; text-align:right;">Prix HT (€)</span>
+          <span style="width:70px; text-align:right;">Remise (%)</span>
+          <span style="width:28px"></span>
+        </div>
+      </div>
+      <button class="btn btn-secondary" onclick="ajouterLigneManuelle()" style="margin-top:8px; font-size:11px;">+ Ajouter une ligne</button>
+    </div>
+
+    <!-- Devise -->
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:14px; padding:10px 14px; background:var(--bg); border:1px solid var(--border); border-radius:4px; flex-wrap:wrap;">
+      <span style="font-size:11px; font-family:'IBM Plex Mono',monospace; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.1em;">Devise du devis</span>
+      <select id="deviseSelect" style="background:var(--surface2); border:1px solid var(--border); color:var(--text); font-family:'IBM Plex Mono',monospace; font-size:12px; padding:5px 10px; border-radius:3px; outline:none; cursor:pointer;" onchange="toggleTauxManuel()">
+        <option value="auto">🔍 Détecter automatiquement</option>
+        <option value="EUR">€ Euro (EUR)</option>
+        <option value="GBP">£ Livre sterling (GBP)</option>
+        <option value="USD">$ Dollar US (USD)</option>
+        <option value="CHF">₣ Franc suisse (CHF)</option>
+        <option value="other">Autre devise...</option>
+      </select>
+      <div id="tauxManuelZone" style="display:none; align-items:center; gap:6px;">
+        <input id="deviseCode" placeholder="Code (ex: SEK)" maxlength="3" style="width:70px; background:var(--bg); border:1px solid var(--border); border-radius:3px; color:var(--text); font-family:'IBM Plex Mono',monospace; font-size:12px; padding:5px 8px; outline:none; text-transform:uppercase;">
+        <span style="font-size:12px; color:var(--text-muted);">1</span>
+        <input id="deviseCode2" placeholder="XXX" maxlength="3" style="width:60px; background:var(--bg); border:1px solid var(--border); border-radius:3px; color:var(--text); font-family:'IBM Plex Mono',monospace; font-size:12px; padding:5px 8px; outline:none; text-transform:uppercase;" value="XXX">
+        <span style="font-size:12px; color:var(--text-muted);">=</span>
+        <input id="tauxManuel" type="number" step="0.0001" placeholder="taux" style="width:80px; background:var(--bg); border:1px solid var(--border); border-radius:3px; color:var(--text); font-family:'IBM Plex Mono',monospace; font-size:12px; padding:5px 8px; outline:none;" value="1">
+        <span style="font-size:12px; color:var(--text-muted);">€</span>
+      </div>
+      <div id="tauxInfo" style="font-size:11px; font-family:'IBM Plex Mono',monospace; color:var(--text-muted); margin-left:auto;">
+        Les prix seront convertis en € avant application de la marge
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-primary" onclick="analyser()">⚡ Calculer les marges</button>
+      <button class="btn btn-secondary" onclick="tout_effacer()">Effacer</button>
+      <div class="taux-info">
+        <span id="tauxInfoMarge"></span>
+      </div>
+    </div>
+
+    <div class="loader" id="loader">
+      <div class="spinner"></div>
+      <span id="loaderMsg">Analyse en cours...</span>
+    </div>
+
+    <div class="error-msg" id="errorMsg"></div>
+  </div>
+
+  <!-- Résultats -->
+  <div class="results-zone" id="results">
+    <div class="results-header">
+      <h2>Résultats — <span id="nbLignes">0</span> article(s)</h2>
+      <div class="summary">
+        Total achat : <span id="totalAchat">0,00 €</span> &nbsp;|&nbsp;
+        Total vente HT : <strong id="totalVente">0,00 €</strong>
+      </div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Référence</th>
+          <th>Désignation</th>
+          <th class="num">Qté</th>
+          <th class="num">PU HT</th>
+          <th class="num">Prix achat HT</th>
+          <th class="num">Remise (%)</th>
+          <th class="num">Coeff.</th>
+          <th class="num">Prix vente HT</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+      <tfoot>
+        <tr>
+          <td colspan="2" class="label">Total achat HT</td>
+          <td class="total-achat" id="footAchat" colspan="5">—</td>
+        </tr>
+        <tr>
+          <td colspan="2" class="label" style="color:var(--accent);">Total vente HT</td>
+          <td class="total-vente" id="footVente" colspan="5" style="font-size:16px;">—</td>
+        </tr>
+      </tfoot>
+    </table>
+
+    <div class="export-bar">
+      <button class="btn btn-secondary" onclick="exporterCSV()">📥 Exporter CSV</button>
+      <button class="btn btn-secondary" onclick="exporterTexte()">📋 Copier pour Sage</button>
+      <button class="btn btn-danger" onclick="effacerResultats()">✕ Fermer</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- API Claude pour l'analyse IA -->
+<script>
+// ── Onglets ──────────────────────────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    const names = ['paste', 'file', 'manual'];
+    t.classList.toggle('active', names[i] === name);
+  });
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+}
+
+// ── Taux de marge (chargés depuis /api/config) ────────────────────────────────
+let _config = null;
+
+async function loadConfig() {
+  if (_config) return _config;
+  try {
+    const r = await fetch('/api/config');
+    if (r.ok) _config = await r.json();
+  } catch {}
+  // Valeurs neutres par sécurité si l'API est indisponible
+  if (!_config) _config = { marge: { seuil1:0, seuil2:0, coeff1:1, coeff2:1, coeff3:1 }, taux: { GBP:1, USD:1, CHF:1 } };
+  return _config;
+}
+
+function getCoeff(prixAchat) {
+  if (!_config) return 1;
+  const { seuil1, seuil2, coeff1, coeff2, coeff3 } = _config.marge;
+  if (prixAchat < seuil1) return coeff1;
+  if (prixAchat <= seuil2) return coeff2;
+  return coeff3;
+}
+
+function coeffLabel(c) {
+  if (!_config) return '';
+  const { coeff1, coeff2, coeff3 } = _config.marge;
+  if (c === coeff1) return '<span class="coeff-badge coeff-22">×' + coeff1.toFixed(2).replace('.',',') + '</span>';
+  if (c === coeff2) return '<span class="coeff-badge coeff-166">×' + coeff2.toFixed(2).replace('.',',') + '</span>';
+  return '<span class="coeff-badge coeff-144">×' + coeff3.toFixed(2).replace('.',',') + '</span>';
+}
+
+// ── Fichier ───────────────────────────────────────────────────────────────────
+let fileData = null;
+let fileType = null;
+
+function handleFile(file) {
+  if (!file) return;
+  document.getElementById('fileName').textContent = file.name;
+  document.getElementById('filePreview').style.display = 'block';
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    fileData = e.target.result.split(',')[1]; // base64
+    fileType = file.type;
+  };
+  reader.readAsDataURL(file);
+
+  // Drag & drop style
+  const drop = document.getElementById('fileDrop');
+  drop.style.borderColor = 'var(--green)';
+  drop.style.background = 'rgba(109,191,138,0.05)';
+}
+
+// Drag & drop
+const fileDrop = document.getElementById('fileDrop');
+fileDrop.addEventListener('dragover', e => { e.preventDefault(); fileDrop.classList.add('drag-over'); });
+fileDrop.addEventListener('dragleave', () => fileDrop.classList.remove('drag-over'));
+fileDrop.addEventListener('drop', e => {
+  e.preventDefault();
+  fileDrop.classList.remove('drag-over');
+  if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+});
+
+// ── Saisie manuelle ───────────────────────────────────────────────────────────
+let manualCount = 0;
+
+function ajouterLigneManuelle() {
+  const id = manualCount++;
+  const div = document.createElement('div');
+  div.id = 'mrow_' + id;
+  div.style.cssText = 'display:flex; gap:8px; margin-bottom:6px; align-items:center;';
+  div.innerHTML = `
+    <input placeholder="Réf." style="flex:1.2; background:var(--bg); border:1px solid var(--border); border-radius:3px; color:var(--text); font-family:'IBM Plex Mono',monospace; font-size:12px; padding:6px 8px; outline:none;" id="mref_${id}">
+    <input placeholder="Désignation" style="flex:3; background:var(--bg); border:1px solid var(--border); border-radius:3px; color:var(--text); font-family:'IBM Plex Sans',sans-serif; font-size:12px; padding:6px 8px; outline:none;" id="mdesc_${id}">
+    <input type="number" placeholder="1" min="1" step="1" value="1" style="width:60px; background:var(--bg); border:1px solid var(--border); border-radius:3px; color:var(--text); font-family:'IBM Plex Mono',monospace; font-size:12px; padding:6px 8px; text-align:right; outline:none;" id="mqte_${id}">
+    <input type="number" placeholder="0.00" step="0.01" style="width:90px; background:var(--bg); border:1px solid var(--border); border-radius:3px; color:var(--text); font-family:'IBM Plex Mono',monospace; font-size:12px; padding:6px 8px; text-align:right; outline:none;" id="mprix_${id}">
+    <input type="number" placeholder="0" min="0" max="100" step="0.1" style="width:70px; background:var(--bg); border:1px solid var(--border); border-radius:3px; color:var(--text); font-family:'IBM Plex Mono',monospace; font-size:12px; padding:6px 8px; text-align:right; outline:none;" id="mremise_${id}">
+    <button onclick="document.getElementById('mrow_${id}').remove()" style="width:28px; height:28px; background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:14px;">✕</button>
+  `;
+  document.getElementById('manualRows').appendChild(div);
+}
+
+// Ajouter 3 lignes par défaut
+ajouterLigneManuelle();
+ajouterLigneManuelle();
+ajouterLigneManuelle();
+
+// ── Analyse principale ────────────────────────────────────────────────────────
+async function analyser() {
+  await loadConfig(); // s'assure que les taux sont chargés
+  updateTauxInfoMarge();
+
+  showError('');
+  const activeTab = document.querySelector('.tab.active').textContent.trim();
+
+  if (activeTab.includes('Saisie')) {
+    analyserManuel();
+    return;
+  }
+
+  if (activeTab.includes('Coller')) {
+    const texte = document.getElementById('pasteArea').value.trim();
+    if (!texte) { 
+      showError('Veuillez coller du contenu à analyser.'); 
+      return; 
+    }
+
+    // 👉 Ici on utilise TON parseur, pas l’IA
+    const resultat = parserTexte(texte);
+    afficherResultats(resultat.articles, resultat.devise);
+    return;
+  }
+
+  if (activeTab.includes('PDF')) {
+    if (!fileData) { 
+      showError('Veuillez sélectionner un fichier.'); 
+      return; 
+    }
+
+    // 👉 PDF continue d’utiliser analyserViaIA
+    analyserViaIA('fichier', null);
+    return;
+  }
+}
+
+// ── Extraction PDF via PDF.js (local, gratuit) ───────────────────────────────
+async function extrairePDF(base64data) {
+  if (!window.pdfjsLib) {
+    await new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+      s.onload = resolve; s.onerror = reject;
+      document.head.appendChild(s);
+    });
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+      'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  }
+  const binary = atob(base64data);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  const pdf = await window.pdfjsLib.getDocument({ data: bytes }).promise;
+  let texteTotal = '';
+  for (let p = 1; p <= pdf.numPages; p++) {
+    const page = await pdf.getPage(p);
+    const tc = await page.getTextContent();
+    const items = tc.items.map(it => ({
+      text: it.str, x: Math.round(it.transform[4]), y: Math.round(it.transform[5])
+    }));
+    items.sort((a, b) => b.y - a.y || a.x - b.x);
+    const lignes = [];
+    let ligneY = null, ligneCourante = [];
+    items.forEach(it => {
+      if (ligneY === null || Math.abs(it.y - ligneY) > 4) {
+        if (ligneCourante.length) lignes.push(ligneCourante);
+        ligneCourante = [it]; ligneY = it.y;
+      } else { ligneCourante.push(it); }
+    });
+    if (ligneCourante.length) lignes.push(ligneCourante);
+    texteTotal += lignes.map(l => l.map(i => i.text).join(String.fromCharCode(9))).join(String.fromCharCode(10)) + String.fromCharCode(10);
+  }
+  let deviseGlobale = null;
+if (/GBP/i.test(texteTotal)) {
+  deviseGlobale = 'GBP';
+}
+
+return { texte: texteTotal, deviseGlobale };
+
+
+}
+
+// ── OCR image via PaddleOCR (serveur Fly.io) ─────────────────────────────────
+const PADDLE_OCR_URL = 'http://localhost:8080/ocr'; // ← à mettre à jour après déploiement
+
+async function extraireImage(base64data, mediaType) {
+  const response = await fetch(PADDLE_OCR_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ image: base64data, type: mediaType })
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error('Serveur OCR : ' + (err.error || response.status));
+  }
+
+  const data = await response.json();
+  if (!data.texte) throw new Error('Réponse OCR vide');
+  return data.texte;
+}
+
+// ── Parser texte intelligent (modifié) ──────────────────────────────────────────────────
+function parseNombre(s) {
+  if (!s) return null;
+  // Supporte 1.234,56 ou 1,234.56 ou 1234.56 ou 1234,56
+  let raw = String(s).trim().replace(/[€£$]/g, '').replace(/\s+/g, '');
+  if (!raw || !/\d/.test(raw)) return null;
+
+  // Rejeter les codes alphanumériques (ex: 020-0001, ABC/123)
+  if (/[A-Za-z]/.test(raw)) return null;
+  if (raw.includes('-') && !raw.startsWith('-')) return null;
+  if (raw.includes('/') && !raw.match(/^[-]?[\d.,]+$/)) return null;
+
+  // Traiter les pourcentages
+  if (raw.endsWith('%')) {
+    raw = raw.slice(0, -1);
+  }
+
+  // Format européen : dernier séparateur est virgule
+  if (/,\d{2}$/.test(raw)) raw = raw.replace(/\./g, '').replace(',', '.');
+  // Format anglais : dernier séparateur est point
+  else raw = raw.replace(/,/g, '');
+  const n = parseFloat(raw);
+  return isNaN(n) ? null : n;
+}
+function parseNombre(s) {
+  if (!s) return null;
+  s = String(s).trim().replace(/[€£$\s]/g, '');
+  if (!s || !/\d/.test(s)) return null;
+  if (/,\d{2}$/.test(s)) s = s.replace(/\./g, '').replace(',', '.');
+  else s = s.replace(/,/g, '');
+  const n = parseFloat(s);
+  return isNaN(n) ? null : n;
+}
+function parseSakurai(text) {
+    console.log(">>> parseSakurai appelé");
+
+    const lines = text
+        .split('\n')
+        .map(l => l.replace(/\r/g, '').trim())
+        .filter(l => l.length > 0);
+
+    const items = [];
+    let i = 0;
+
+    while (i < lines.length) {
+
+        const line1 = lines[i];
+
+        // 🔥 On saute uniquement les lignes qui COMMENCENT par "Attach"
+        if (!line1 || /^attach\b/i.test(line1.trim())) {
+            i++;
+            continue;
+        }
+
+        // 🔥 Split tabulé
+        const cols = line1.split("\t").map(c => c.trim());
+
+        if (cols.length < 8) {
+            i++;
+            continue;
+        }
+
+        const parts_no = cols[5];
+        if (!parts_no) {
+            i++;
+            continue;
+        }
+
+        const parts_name = cols[6];
+        const qty = parseInt(cols[7], 10) || 1;
+
+        // 🔥 Ligne 2 = Attach (toutes variantes)
+        const lineAttach = lines[i + 1] || "";
+
+   // 🔥 Ligne 3 = prix
+const linePrice = lines[i + 2] || "";
+
+let unit_price = 0;
+
+// On récupère le DERNIER nombre de la ligne
+const match = linePrice.match(/(\d[\d.,]*)\s*$/);
+if (match) {
+    unit_price = parseFloat(match[1].replace(',', '.')) || 0;
+}
+
+        const total = unit_price * qty;
+
+        items.push({
+            ref: parts_no,
+            designation: parts_name,
+            quantite: qty,
+            pu: unit_price,
+            remise: 0,
+            total,
+            prix: total
+        });
+
+        i += 3;
+    }
+
+    return items;
+}
+function parserTexte(texte, deviseGlobale) {
+console.log(">>> parseTexte appelé");
+// 🔥 Détection Natgraph (infaillible)
+const isNatgraph =
+    /Natgraph/i.test(texte) ||
+    /Total GBP/i.test(texte) ||
+    /Product Code/i.test(texte) ||
+    /Discount %/i.test(texte) ||
+    /Handelsbanken/i.test(texte) ||
+    /SORT CODE/i.test(texte);
+
+if (isNatgraph) {
+    console.log(">>> Détection Natgraph OK");
+
+    const lignesFiltrees = texte
+        .split("\n")
+        .map(l => l.trim())
+        .filter(l => l.length > 0)
+
+        // ❌ Lignes parasites (texte, adresse, banque, etc.)
+        .filter(l => !/^(Call|Email|Visit):/i.test(l))
+        .filter(l => !/^(INVOICE|DATE\/TAX|ORDER NO|COURIER|DELIVERY|TRACKING)/i.test(l))
+        .filter(l => !/^(A\/C CODE|HS CODE|EORI|VAT)/i.test(l))
+        .filter(l => !/^(Product Code|OVERSEAS)/i.test(l))
+        .filter(l => !/^(PLEASE SEE|SERIAL|Registered in England)/i.test(l))
+        .filter(l => !/^(BANK|TERMS|SORT CODE|ACCOUNT NO|SWIFT|IBAN)/i.test(l))
+        .filter(l => !/^Total\s/i.test(l))
+        .filter(l => !/Document total/i.test(l))
+        .filter(l => !/Company No/i.test(l))
+        .filter(l => !/All transactions/i.test(l))
+
+        // ❌ Lignes multi-lignes parasites (ex: "mods -4 days)")
+        .filter(l => !/^\)/.test(l))
+        .filter(l => !/^\(.+\)$/.test(l))
+
+        // ✔ Garder les lignes SERVICE seulement si elles ressemblent à un article
+        .filter(l => {
+            if (/^SERVICE\b/i.test(l)) {
+                // On garde seulement si la ligne contient Qty + Total
+                const hasQty = /\b[0-9]+\.[0-9]+\b/.test(l);
+                const hasTotal = /\b[0-9]+\.[0-9]+\b/.test(l);
+                return hasQty && hasTotal;
+            }
+            return true;
+        })
+
+        // ✔ Garder les lignes pièces (codes)
+        .filter(l =>
+            /^SERVICE\b/i.test(l) ||
+            /^[0-9]{3}-[0-9]{4}/.test(l) ||
+            /^[A-Z0-9]{2,}-[0-9]/.test(l) ||
+            /\t[0-9]+\.[0-9]+\t/.test(l)
+        );
+
+    texte = lignesFiltrees.join("\n");
+}
+
+// Détection Sakurai (fiable)
+const isSakurai =
+    /Attach\b/i.test(texte) ||
+    /Checking Parts No\./i.test(texte) ||
+    /Over\s*\d*month/i.test(texte) ||
+    /\bParts No\b.*\bParts Name\b/i.test(texte);
+
+if (isSakurai) {
+    console.log(">>> Détection Sakurai OK");
+    const articles = parseSakurai(texte);
+    return { articles, devise: "EUR" };
+}
+
+  let devise = deviseGlobale || 'EUR';
+  if (/[£]|GBP/i.test(texte)) devise = 'GBP';
+  else if (/USD/i.test(texte)) devise = 'USD';
+  else if (/CHF/i.test(texte)) devise = 'CHF';
+
+  const NL = String.fromCharCode(10);
+  const lignes = texte.split(NL).map(l => l.trim()).filter(l => l.length > 2);
+  const articles = [];
+
+  const reIgnore = /^(product.?code|product.?desc|ref[eé]?|description|item|qty|qté|quantity|unit|price|prix|total|montant|ht|ttc|tva|amount|subtotal|discount|remise|invoice|facture|quote|devis|customer|client|date|page|tel|fax|email|www|http|bank|account|terms|payment|vat|company|address|registered|sort.?code)/i;
+
+  // Regex pour un nombre décimal (accepte aussi "100" qui vient de "1.00" mal reconnu)
+  const reNum = /^\d+([.,]\d+)?$/;
+
+  lignes.forEach(ligne => {
+    if (reIgnore.test(ligne)) return;
+
+    // Découper par tabulations ou 2+ espaces d'abord
+    let cols = ligne.split(/\t+|\s{2,}/).map(c => c.trim()).filter(c => c.length > 0);
+
+    // Si une seule colonne → tout est collé avec espaces simples
+    // On extrait les nombres depuis la fin de la ligne
+    if (cols.length <= 2) {
+      // Séparer par espaces simples
+      const mots = ligne.split(/\s+/);
+      // Ramasser les nombres depuis la droite
+      const nbsDroite = [];
+      let i = mots.length - 1;
+      while (i >= 0 && nbsDroite.length < 4) {
+        const v = parseNombre(mots[i]);
+        if (v !== null) { nbsDroite.unshift({ raw: mots[i], val: v, idx: i }); i--; }
+        else break;
+      }
+      if (nbsDroite.length === 0) return;
+      // Le reste = texte (ref + désignation)
+      const texteGauche = mots.slice(0, nbsDroite[0].idx).join(' ').trim();
+      cols = texteGauche ? [texteGauche, ...nbsDroite.map(n => n.raw)] : nbsDroite.map(n => n.raw);
+    }
+
+    // Identifier colonnes numériques
+    const parsed = cols.map(c => ({ raw: c, val: parseNombre(c) }));
+    const nombres = parsed.filter(c => c.val !== null);
+    const colsTexte = parsed.filter(c => c.val === null).map(c => c.raw);
+
+    // Filtrer nombres parasites (>= 10000 = code, < 0)
+    const nbsSig = nombres.filter(n => n.val >= 0 && n.val < 10000);
+    if (nbsSig.length === 0) return;
+
+    // Prix achat = dernier nombre (total ligne), ignorer les 0
+    const nbsNonZero = nbsSig.filter(n => n.val > 0);
+    if (nbsNonZero.length === 0) return; // ligne à 0 ignorée
+    let prixAchat = nbsNonZero[nbsNonZero.length - 1].val;
+
+    // PU = avant-dernier nombre non-zéro si plusieurs
+    let pu = prixAchat;
+    let quantite = 1;
+    let remise = 0;
+
+    if (nbsSig.length >= 3) {
+      // Structure : Qté | PU | Remise% | Total
+      // On cherche : qty=premier si entier<=999, remise=valeur<100 avec décimale, total=dernier
+      const premier = nbsSig[0].val;
+      if (Number.isInteger(premier) || premier <= 100) quantite = premier;
+
+      // Remise = valeur entre 0 et 100 qui ressemble à un %
+      const candidatRemise = nbsSig.find((n, idx) => idx > 0 && n.val > 0 && n.val <= 100 && n.val !== prixAchat);
+      if (candidatRemise) remise = candidatRemise.val;
+
+      // PU = valeur avant le total, après la qté
+      const milieu = nbsSig.filter(n => n !== nbsSig[0] && n.val !== prixAchat && n.val !== (candidatRemise ? candidatRemise.val : -1));
+      if (milieu.length > 0) pu = milieu[milieu.length - 1].val;
+
+    } else if (nbsSig.length === 2) {
+      const n0 = nbsSig[0].val, n1 = nbsSig[1].val;
+      if (n0 <= 999 && n0 >= 1) { quantite = n0; pu = n1; }
+      else { pu = n0; }
+    }
+
+    // Texte → ref + désignation
+    if (colsTexte.length === 0) return;
+    let ref = '', designation = '';
+    const reRef = /^[A-Z0-9][A-Z0-9\-\/\.]{1,24}$/;
+    if (colsTexte.length >= 2 && reRef.test(colsTexte[0])) {
+      ref = colsTexte[0];
+      designation = colsTexte.slice(1).join(' ');
+    } else if (colsTexte.length === 1) {
+      // Essayer de séparer ref et désignation dans la même chaîne
+      const match = colsTexte[0].match(/^([A-Z0-9][A-Z0-9\-\/\.]{1,24})\s+(.+)$/);
+      if (match) { ref = match[1]; designation = match[2]; }
+      else { designation = colsTexte[0]; }
+    } else {
+      designation = colsTexte.join(' ');
+    }
+
+    designation = designation.replace(/[€£$]|EUR|GBP|USD|CHF/g, '').replace(/\s{2,}/g, ' ').trim();
+    if (designation.length < 2) return;
+    // 🔥 Extraction Natgraph fiable : les 4 derniers nombres = qty, pu, remise, total
+if (isNatgraph) {
+    const nums = (ligne.match(/\d+[\.,]?\d*/g) || [])
+        .map(n => parseFloat(n.replace(',', '.')));
+
+    if (nums.length >= 4) {
+        quantite  = nums[nums.length - 4];
+        pu        = nums[nums.length - 3];
+        remise    = nums[nums.length - 2];
+        prixAchat = nums[nums.length - 1];
+    }
+}
+    // 🔥 Correction PU pour Natgraph : si PU = 0 mais total > 0 → recalculer
+if (isNatgraph && pu === 0 && prixAchat > 0 && quantite > 0) {
+    pu = prixAchat / quantite;
+}
+
+
+    articles.push({ ref, designation, quantite, pu, remise, total: prixAchat, prix: prixAchat });
+  });
+
+  return { articles, devise };
+}
+
+
+async function analyserViaIA(mode, texte) {
+  showLoader(mode === 'texte' ? 'Analyse du texte...' : 'Extraction du PDF...');
+  try {
+    let texteBrut = texte;
+     let deviseGlobale = null;
+    if (mode === 'fichier') {
+      if (fileType === 'application/pdf') {
+        const result = await extrairePDF(fileData);
+        texteBrut = result.texte;
+        deviseGlobale = result.deviseGlobale;
+      } else {
+        // Image → OCR avec Tesseract.js
+        showLoader('OCR en cours... (quelques secondes)');
+        texteBrut = await extraireImage(fileData, fileType);
+      }
+    }
+
+        // 🔥🔥🔥 LOG RAW LINES — C’EST ICI 🔥🔥🔥
+    console.log("=== TEXTE OCR PDF ===");
+    console.log(
+      texteBrut
+        .split("\n")
+        .map(l => "RAW LINE: " + JSON.stringify(l))
+        .join("\n")
+    );
+    console.log("=== FIN TEXTE OCR ===");
+
+
+
+    hideLoader();
+    const { articles, devise } = parserTexte(texteBrut, deviseGlobale);
+    if (articles.length === 0) {
+      // Afficher le texte brut extrait pour aider au diagnostic
+      showError('Aucun article détecté. Texte brut extrait (copiez-le dans l\'onglet "Coller") :');
+      let debugZone = document.getElementById('debugZone');
+      if (!debugZone) {
+        debugZone = document.createElement('textarea');
+        debugZone.id = 'debugZone';
+        debugZone.style.cssText = 'width:100%;height:180px;margin-top:10px;background:var(--bg);color:var(--text);border:1px solid var(--border);font-family:monospace;font-size:11px;padding:8px;border-radius:4px;';
+        document.getElementById('errorMsg').after(debugZone);
+      }
+      debugZone.style.display = 'block';
+      debugZone.value = texteBrut;
+      return;
+    }
+    const dbg = document.getElementById('debugZone');
+    if (dbg) dbg.style.display = 'none';
+    const deviseSelectVal = document.getElementById('deviseSelect').value;
+    await convertirEtAfficher(articles, devise, deviseSelectVal);
+  } catch (err) {
+    hideLoader();
+    showError('Erreur : ' + err.message);
+  }
+}
+
+
+function analyserManuel() {
+  const rows = document.querySelectorAll('[id^="mrow_"]');
+  const articles = [];
+  rows.forEach(row => {
+    const id = row.id.replace('mrow_', '');
+    const ref = (document.getElementById('mref_' + id)?.value || '').trim();
+    const desc = (document.getElementById('mdesc_' + id)?.value || '').trim();
+    const qte = parseFloat(document.getElementById('mqte_' + id)?.value) || 1;
+    const prix = parseFloat(document.getElementById('mprix_' + id)?.value) || 0;
+    const remise = parseFloat(document.getElementById('mremise_' + id)?.value) || 0;
+    if (desc || prix > 0) articles.push({ ref, designation: desc, prix, quantite: qte, remise });
+  });
+  if (articles.length === 0) { showError('Aucun article saisi.'); return; }
+  const deviseChoix = document.getElementById('deviseSelect').value;
+  convertirEtAfficher(articles, 'EUR', deviseChoix);
+}
+
+// ── Devise & conversion ──────────────────────────────────────────────────────
+// Taux fixes de fallback (mis à jour manuellement si besoin)
+// Taux chargés depuis /api/config (voir loadConfig)
+function getTauxFallback(devise) {
+  if (_config && _config.taux && _config.taux[devise]) return _config.taux[devise];
+  return 1;
+}
+
+function updateTauxInfoMarge() {
+  if (!_config) return;
+  const { seuil1, seuil2, coeff1, coeff2, coeff3 } = _config.marge;
+  const el = document.getElementById('tauxInfoMarge');
+  if (el) {
+    el.innerHTML = `Taux : <span class="t1">×${coeff1.toFixed(2).replace('.',',')} &lt;${seuil1}€</span> <span class="t2">×${coeff2.toFixed(2).replace('.',',')} ≤${seuil2}€</span> <span class="t3">×${coeff3.toFixed(2).replace('.',',')} &gt;${seuil2}€</span>`;
+  }
+}
+
+function toggleTauxManuel() {
+  const val = document.getElementById('deviseSelect').value;
+  document.getElementById('tauxManuelZone').style.display = val === 'other' ? 'flex' : 'none';
+  if (val !== 'auto' && val !== 'other' && val !== 'EUR') {
+    const taux = getTauxFallback(val);
+    document.getElementById('tauxInfo').innerHTML =
+      `Taux utilisé : <strong style="color:var(--accent)">1 ${val} = ${taux} €</strong> <span style="font-size:10px;">(taux indicatif)</span>`;
+  } else if (val === 'EUR') {
+    document.getElementById('tauxInfo').textContent = 'Aucune conversion nécessaire';
+  } else if (val === 'auto') {
+    document.getElementById('tauxInfo').textContent = 'Les prix seront convertis en € avant application de la marge';
+  }
+}
+
+function getTauxConversion(devise) {
+  return getTauxFallback(devise);
+}
+
+async function convertirEtAfficher(articles, deviseDetectee, deviseChoix) {
+  let devise, taux;
+
+  if (deviseChoix === 'auto') {
+    devise = deviseDetectee;
+  } else if (deviseChoix === 'other') {
+    devise = (document.getElementById('deviseCode').value || 'EUR').toUpperCase();
+    taux = parseFloat(document.getElementById('tauxManuel').value) || 1;
+  } else {
+    devise = deviseChoix;
+  }
+
+  if (!taux) {
+    taux = getTauxConversion(devise);
+  }
+
+  // Mettre à jour l'info taux
+  if (devise !== 'EUR') {
+    document.getElementById('tauxInfo').innerHTML =
+      `Conversion : <strong style="color:var(--accent)">1 ${devise} = ${taux.toFixed(4)} €</strong>`;
+  }
+
+  // Convertir les prix
+  const articlesConvertis = articles.map(a => ({
+    ...a,
+    prix: (parseFloat(a.prix) || 0) * taux,
+    puConverti: (parseFloat(a.pu) || 0) * taux,
+    deviseOriginale: devise !== 'EUR' ? devise : null,
+    prixOriginal: parseFloat(a.prix) || 0
+  }));
+
+  afficherResultats(articlesConvertis, devise, taux);
+}
+
+// ── Affichage résultats ───────────────────────────────────────────────────────
+let articlesData = [];
+
+function afficherResultats(articles, devise, taux) {
+  articlesData = articles;
+  const tbody = document.getElementById('tableBody');
+  tbody.innerHTML = '';
+
+  let totalAchat = 0, totalVente = 0;
+
+  articles.forEach((art, i) => {
+    const prix = parseFloat(art.prix) || 0;
+    const quantite = parseFloat(art.quantite) || 1;
+    const remise = parseFloat(art.remise) || 0;
+    const coeff = getCoeff(prix);
+    const prixVente = prix * coeff;
+    totalAchat += prix;
+    totalVente += prixVente;
+
+    const origInfo = art.deviseOriginale
+      ? `<br><span style="font-size:10px;color:var(--text-muted);">${art.prixOriginal?.toFixed(2)} ${art.deviseOriginale}</span>`
+      : '';
+    const totalGBP = art.deviseOriginale && art.prixOriginal
+      ? `<br><span style="font-size:10px;color:var(--text-muted);">${art.prixOriginal.toFixed(2)} ${art.deviseOriginale}</span>`
+      : '';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="ref">${escHtml(art.ref || '—')}</td>
+      <td>${escHtml(art.designation || '')}</td>
+      <td class="prix" style="text-align:right;">${quantite}</td>
+      <td class="prix" style="text-align:right;">
+        ${art.puConverti ? art.puConverti.toFixed(2) + ' €' : (art.pu || 0).toFixed(2) + ' €'}
+        ${art.deviseOriginale ? '<br><span style="font-size:10px;color:var(--text-muted);">' + (art.pu || 0).toFixed(2) + ' ' + art.deviseOriginale + '</span>' : ''}
+      </td>
+
+  <!-- Colonne PRIX ACHAT = TOTAL -->
+
+
+      <td class="prix">
+        <input class="prix-input" type="number" step="0.01" value="${prix.toFixed(2)}"
+          onchange="recalcLigne(this, ${i})" onblur="recalcLigne(this, ${i})">
+        ${origInfo}
+      </td>
+      <td class="prix" style="text-align:right;">${remise > 0 ? remise + '%' : '—'}</td>
+      <td style="text-align:right;" id="coeff_${i}">${coeffLabel(coeff)}</td>
+      <td class="prix-vente" id="vente_${i}">${fmt(prixVente)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById('nbLignes').textContent = articles.length;
+  majTotaux(totalAchat, totalVente);
+
+  document.getElementById('results').classList.add('active');
+  document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function recalcLigne(input, i) {
+  const prix = parseFloat(input.value) || 0;
+  articlesData[i].prix = prix;
+  const coeff = getCoeff(prix);
+  const prixVente = prix * coeff;
+  document.getElementById('coeff_' + i).innerHTML = coeffLabel(coeff);
+  document.getElementById('vente_' + i).textContent = fmt(prixVente);
+
+  let totalAchat = 0, totalVente = 0;
+  articlesData.forEach(a => {
+    const p = parseFloat(a.prix) || 0;
+    totalAchat += p;
+    totalVente += p * getCoeff(p);
+  });
+  majTotaux(totalAchat, totalVente);
+}
+
+function majTotaux(achat, vente) {
+  document.getElementById('totalAchat').textContent = fmt(achat);
+  document.getElementById('totalVente').textContent = fmt(vente);
+  document.getElementById('footAchat').textContent = fmt(achat);
+  document.getElementById('footVente').textContent = fmt(vente);
+}
+
+// ── Export ────────────────────────────────────────────────────────────────────
+function exporterCSV() {
+  const rows = [['Référence', 'Désignation', 'Quantité', 'Prix achat HT', 'Remise (%)', 'Coeff', 'Prix vente HT']];
+  articlesData.forEach(a => {
+    const p = parseFloat(a.prix) || 0;
+    const q = parseFloat(a.quantite) || 1;
+    const r = parseFloat(a.remise) || 0;
+    const c = getCoeff(p);
+    rows.push([a.ref || '', a.designation || '', q, p.toFixed(2), r, c, (p * c).toFixed(2)]);
+  });
+  const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(';')).join('\n');
+  telecharger('devis_cpss.csv', 'text/csv;charset=utf-8;', '\uFEFF' + csv);
+}
+
+function exporterTexte() {
+  const lignes = articlesData.map(a => {
+    const p = parseFloat(a.prix) || 0;
+    const q = parseFloat(a.quantite) || 1;
+    const v = p * getCoeff(p);
+    return `${a.ref || ''}\t${a.designation || ''}\t${q}\t${v.toFixed(2)}`;
+  });
+  navigator.clipboard.writeText(lignes.join('\n'))
+    .then(() => alert('✓ Copié dans le presse-papiers (Réf. / Désignation / Qté / Prix vente HT)'))
+    .catch(() => alert('Impossible de copier automatiquement.'));
+}
+
+function telecharger(nom, type, contenu) {
+  const blob = new Blob([contenu], { type });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = nom;
+  a.click();
+}
+
+// ── Utilitaires ───────────────────────────────────────────────────────────────
+function fmt(n) {
+  return n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function showError(msg) {
+  const el = document.getElementById('errorMsg');
+  el.textContent = msg;
+  el.classList.toggle('active', !!msg);
+}
+
+function showLoader(msg) {
+  document.getElementById('loader').classList.add('active');
+  document.getElementById('loaderMsg').textContent = msg;
+}
+
+function hideLoader() {
+  document.getElementById('loader').classList.remove('active');
+}
+
+function effacerResultats() {
+  document.getElementById('results').classList.remove('active');
+  articlesData = [];
+}
+
+function tout_effacer() {
+  document.getElementById('pasteArea').value = '';
+  fileData = null;
+  fileType = null;
+  document.getElementById('filePreview').style.display = 'none';
+  document.getElementById('fileName').textContent = '';
+  const drop = document.getElementById('fileDrop');
+  drop.style.borderColor = '';
+  drop.style.background = '';
+  effacerResultats();
+  showError('');
+}
+// ── Coller image depuis presse-papiers (Ctrl+V) ──────────────────────────────
+document.addEventListener('paste', function(e) {
+  const items = (e.clipboardData || e.originalEvent?.clipboardData)?.items;
+  if (!items) return;
+  for (const item of items) {
+    if (item.type.startsWith('image/')) {
+      e.preventDefault();
+      const file = item.getAsFile();
+      if (!file) return;
+      // Switcher vers l'onglet fichier
+      switchTab('file');
+      // Charger l'image
+      handleFile(file);
+      // Feedback
+      document.getElementById('fileName').textContent = 'Image collée depuis le presse-papiers';
+      document.getElementById('filePreview').style.display = 'block';
+      // Flash visuel
+      const drop = document.getElementById('fileDrop');
+      drop.style.borderColor = 'var(--accent2)';
+      drop.style.background = 'rgba(126,184,200,0.08)';
+      setTimeout(() => {
+        drop.style.borderColor = 'var(--green)';
+        drop.style.background = 'rgba(109,191,138,0.05)';
+      }, 400);
+      break;
+    }
+  }
+});
+</script>
+
+</body>
+</html>
