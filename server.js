@@ -108,9 +108,10 @@ async function getRapport(key) {
 
 async function setRapport(key, data) {
   if (db) {
-    await db.collection('rapports').updateOne(
+    // replaceOne pour écraser le document entier (pas $set qui fusionne)
+    await db.collection('rapports').replaceOne(
       { _id: key },
-      { $set: { ...data, _id: key } },
+      { ...data, _id: key },
       { upsert: true }
     );
     return;
