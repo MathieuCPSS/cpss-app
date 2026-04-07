@@ -853,6 +853,7 @@ if (match) {
 
     return items;
 }
+  
 function parserTexte(texte, deviseGlobale) {
 console.log(">>> parseTexte appelé");
 // 🔥 Détection Natgraph (infaillible)
@@ -884,31 +885,30 @@ if (isNatgraph) {
         .filter(l => !/Company No/i.test(l))
         .filter(l => !/All transactions/i.test(l))
 
-        // ❌ Lignes multi-lignes parasites (ex: "mods -4 days)")
+        // ❌ Lignes multi-lignes parasites
         .filter(l => !/^\)/.test(l))
         .filter(l => !/^\(.+\)$/.test(l))
 
-        // ✔ Garder les lignes SERVICE seulement si elles ressemblent à un article
+        // ✔ Garder SERVICE seulement si ça ressemble à un article
         .filter(l => {
             if (/^SERVICE\b/i.test(l)) {
-                // On garde seulement si la ligne contient Qty + Total
-                const hasQty = /\b[0-9]+\.[0-9]+\b/.test(l);
-                const hasTotal = /\b[0-9]+\.[0-9]+\b/.test(l);
-                return hasQty && hasTotal;
+                const nums = l.match(/\d+[\.,]?\d*/g);
+                return nums && nums.length >= 2;
             }
             return true;
         })
 
-        // ✔ Garder les lignes pièces (codes)
-        .filter(l =>
-            /^SERVICE\b/i.test(l) ||
-            /^[0-9]{3}-[0-9]{4}/.test(l) ||
-            /^[A-Z0-9]{2,}-[0-9]/.test(l) ||
-            /\t[0-9]+\.[0-9]+\t/.test(l)
-        );
+        // 🔥🔥🔥 FILTRE PREMIUM NATGRAPH — LE SEUL À MODIFIER 🔥🔥🔥
+        // Garder une ligne si elle contient au moins 2 nombres (Natgraph = qty + total)
+        .filter(l => {
+            const nums = l.match(/\d+[\.,]?\d*/g);
+            return nums && nums.length >= 2;
+        });
 
+    // On remplace le texte par les lignes filtrées
     texte = lignesFiltrees.join("\n");
 }
+
 
 // Détection Sakurai (fiable)
 const isSakurai =
@@ -1019,29 +1019,44 @@ if (isSakurai) {
 
     designation = designation.replace(/[€£$]|EUR|GBP|USD|CHF/g, '').replace(/\s{2,}/g, ' ').trim();
     if (designation.length < 2) return;
-    // 🔥 Extraction Natgraph fiable : les 4 derniers nombres = qty, pu, remise, total
+// 🔥 Extraction Natgraph PREMIUM
 if (isNatgraph) {
+
+    // Extraire tous les nombres de la ligne
     const nums = (ligne.match(/\d+[\.,]?\d*/g) || [])
         .map(n => parseFloat(n.replace(',', '.')));
 
-    if (nums.length >= 4) {
-        quantite  = nums[nums.length - 4];
-        pu        = nums[nums.length - 3];
-        remise    = nums[nums.length - 2];
+    if (nums.length >= 2) {
+
+        // Total = dernier nombre
         prixAchat = nums[nums.length - 1];
+
+        // PU = avant-dernier
+        pu = nums.length >= 2 ? nums[nums.length - 2] : 0;
+
+        // Qté = troisième depuis la fin
+        quantite = nums.length >= 3 ? nums[nums.length - 3] : 1;
+
+        // Remise = quatrième depuis la fin (si présente)
+        remise = nums.length >= 4 ? nums[nums.length - 4] : 0;
+
+        // Correction : si PU = 0 mais total > 0 → recalcul
+        if (pu === 0 && prixAchat > 0 && quantite > 0) {
+            pu = prixAchat / quantite;
+        }
     }
-}
-    // 🔥 Correction PU pour Natgraph : si PU = 0 mais total > 0 → recalculer
-if (isNatgraph && pu === 0 && prixAchat > 0 && quantite > 0) {
-    pu = prixAchat / quantite;
+
+    // 🔥 Correction REF + désignation (PACKING, FREIGHT, etc.)
+    if (!ref) {
+        const mots = colsTexte.join(" ").split(" ");
+        ref = mots[0];
+        designation = mots.slice(1).join(" ");
+    }
+
+    ref = ref.trim();
+    designation = designation.trim();
 }
 
-
-    articles.push({ ref, designation, quantite, pu, remise, total: prixAchat, prix: prixAchat });
-  });
-
-  return { articles, devise };
-}
 
 
 async function analyserViaIA(mode, texte) {
