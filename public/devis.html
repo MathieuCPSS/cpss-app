@@ -866,17 +866,22 @@ function parseNatgraph(texte) {
         // Normalisation : tab → espace
         let cols = ligne
             .replace(/\t/g, ' ')
-            .replace(/\s{2,}/g, '  ')   // normalisation des espaces multiples
-            .split(/ {2,}/)             // split sur 2+ espaces
+            .replace(/\s{2,}/g, '  ')
+            .split(/ {2,}/)
             .map(c => c.trim())
             .filter(c => c.length > 0);
+
+        // 🔥 Ignorer les lignes Serial
+        if (/^serial\b/i.test(cols[0])) {
+            continue;
+        }
 
         // Ignorer les lignes d'en-tête ou totaux
         if (/^(Total|Tax|Document|BANK|TERMS|ACCOUNT|SWIFT|IBAN|Registered|All)/i.test(cols[0])) {
             continue;
         }
 
-        // 🔥 Fallback si OCR a collé toute la ligne (espaces simples)
+        // 🔥 Fallback si OCR a collé toute la ligne
         if (cols.length < 6) {
             const nums = [...ligne.matchAll(/\d[\d.,]*/g)].map(m => m[0]);
 
@@ -903,7 +908,7 @@ function parseNatgraph(texte) {
             }
         }
 
-        // 🔥 Parsing normal (cols bien séparées)
+        // 🔥 Parsing normal
         if (cols.length >= 6) {
             const ref = cols[0];
             const designation = cols[1];
@@ -927,6 +932,7 @@ function parseNatgraph(texte) {
 
     return articles;
 }
+
 
 function parserTexte(texte, deviseGlobale) {
  console.log(">>> VERSION PARSER ACTUELLE = 2025-04-07-19h24");
