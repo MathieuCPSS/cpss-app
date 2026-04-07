@@ -863,10 +863,10 @@ function parseNatgraph(texte) {
 
     for (const ligne of lignes) {
 
-        // Split par tabulations (OCR Natgraph est tabulé)
-        const cols = ligne.split(/\t+/).map(c => c.trim());
+        // Split Natgraph : tabulations OU espaces multiples
+        const cols = ligne.split(/\t+|\s{2,}/).map(c => c.trim());
 
-        // On ignore les lignes d'en-tête ou totaux
+        // Ignorer les lignes d'en-tête ou totaux
         if (cols[0].match(/^(Total|Tax|Document|BANK|TERMS|ACCOUNT|SWIFT|IBAN|Registered|All)/i)) {
             continue;
         }
@@ -881,7 +881,6 @@ function parseNatgraph(texte) {
         const discount = parseFloat(cols[4].replace(',', '.'));
         const total = parseFloat(cols[5].replace(',', '.'));
 
-        // Vérification minimale
         if (isNaN(qty) || isNaN(price) || isNaN(total)) continue;
 
         articles.push({
@@ -896,6 +895,7 @@ function parseNatgraph(texte) {
 
     return articles;
 }
+
 
 function parserTexte(texte, deviseGlobale) {
 console.log(">>> parseTexte appelé");
