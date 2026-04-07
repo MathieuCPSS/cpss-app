@@ -901,17 +901,18 @@ function parserTexte(texte, deviseGlobale) {
 console.log(">>> parseTexte appelé");
 // 🔥 Détection Natgraph (infaillible)
 const isNatgraph =
-    /Natgraph/i.test(texte) ||
-    /Total GBP/i.test(texte) ||
-    /Product Code/i.test(texte) ||
-    /Discount %/i.test(texte) ||
-    /Handelsbanken/i.test(texte) ||
-    /SORT CODE/i.test(texte);
+    /Product\s+Code/i.test(texte) ||
+    /Total\s+GBP/i.test(texte) ||
+    /\bDiscount\s*%/i.test(texte) ||
+    /\bHandelsbanken\b/i.test(texte) ||
+    /\bEORI\b/i.test(texte) ||
+    /\bA\/C CODE\b/i.test(texte);
 
 if (isNatgraph) {
     console.log(">>> Détection Natgraph OK");
-return { articles: parseNatgraph(texte), devise: "GBP" };
+    return { articles: parseNatgraph(texte), devise: "GBP" };
 }
+
 
 // Détection Sakurai (fiable)
 const isSakurai =
