@@ -1004,7 +1004,7 @@ if (isSakurai) {
     // Texte → ref + désignation
     if (colsTexte.length === 0) return;
     let ref = '', designation = '';
-    const reRef = /^[A-Z0-9][A-Z0-9\-\/\.]{1,24}$/;
+    const reRef = /^[A-Z0-9][A-Z0-9\-\/\.]{0,24}$/;
     if (colsTexte.length >= 2 && reRef.test(colsTexte[0])) {
       ref = colsTexte[0];
       designation = colsTexte.slice(1).join(' ');
