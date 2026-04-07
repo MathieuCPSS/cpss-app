@@ -853,6 +853,51 @@ if (match) {
 
     return items;
 }
+function parseNatgraph(texte) {
+    const lignes = texte
+        .split("\n")
+        .map(l => l.trim())
+        .filter(l => l.length > 0);
+
+    const articles = [];
+
+    for (const ligne of lignes) {
+
+        // On ignore les lignes qui ne contiennent pas au moins 2 nombres
+        const nums = (ligne.match(/\d+[\.,]?\d*/g) || [])
+            .map(n => parseFloat(n.replace(',', '.')));
+
+        if (nums.length < 2) continue;
+
+        // Extraction des 4 derniers nombres (Natgraph standard)
+        const total = nums[nums.length - 1];
+        const discount = nums.length >= 3 ? nums[nums.length - 2] : 0;
+        const price = nums.length >= 3 ? nums[nums.length - 3] : total;
+        const qty = nums.length >= 4 ? nums[nums.length - 4] : 1;
+
+        // Extraction REF + désignation
+        const tokens = ligne.split(/\s+/);
+        const ref = tokens[0];
+        const designation = tokens.slice(1, tokens.length - nums.length).join(" ");
+
+        // On ignore les lignes "Tax", "Total", etc.
+        if (/^(Tax|Total|Document|GBP)$/i.test(ref)) continue;
+
+        articles.push({
+            ref: ref,
+            designation: designation.trim(),
+            quantite: qty,
+            prix: price,
+            remise: discount,
+            total: total
+        });
+    }
+
+    return articles;
+}
+
+
+  
 function parserTexte(texte, deviseGlobale) {
 console.log(">>> parseTexte appelé");
 // 🔥 Détection Natgraph (infaillible)
@@ -866,6 +911,7 @@ const isNatgraph =
 
 if (isNatgraph) {
     console.log(">>> Détection Natgraph OK");
+return { articles: parseNatgraph(texte), devise: "GBP" };
 
     const lignesFiltrees = texte
         .split("\n")
