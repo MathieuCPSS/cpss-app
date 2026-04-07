@@ -863,41 +863,40 @@ function parseNatgraph(texte) {
 
     for (const ligne of lignes) {
 
-        // On ignore les lignes qui ne contiennent pas au moins 2 nombres
-        const nums = (ligne.match(/\d+[\.,]?\d*/g) || [])
-            .map(n => parseFloat(n.replace(',', '.')));
+        // Split par tabulations (OCR Natgraph est tabulé)
+        const cols = ligne.split(/\t+/).map(c => c.trim());
 
-        if (nums.length < 2) continue;
+        // On ignore les lignes d'en-tête ou totaux
+        if (cols[0].match(/^(Total|Tax|Document|BANK|TERMS|ACCOUNT|SWIFT|IBAN|Registered|All)/i)) {
+            continue;
+        }
 
-        // Extraction des 4 derniers nombres (Natgraph standard)
-        const total = nums[nums.length - 1];
-        const discount = nums.length >= 3 ? nums[nums.length - 2] : 0;
-        const price = nums.length >= 3 ? nums[nums.length - 3] : total;
-        const qty = nums.length >= 4 ? nums[nums.length - 4] : 1;
+        // Une ligne valide Natgraph a au moins 6 colonnes
+        if (cols.length < 6) continue;
 
-        // Extraction REF + désignation
-        const tokens = ligne.split(/\s+/);
-        const ref = tokens[0];
-        const designation = tokens.slice(1, tokens.length - nums.length).join(" ");
+        const ref = cols[0];
+        const designation = cols[1];
+        const qty = parseFloat(cols[2].replace(',', '.'));
+        const price = parseFloat(cols[3].replace(',', '.'));
+        const discount = parseFloat(cols[4].replace(',', '.'));
+        const total = parseFloat(cols[5].replace(',', '.'));
 
-        // On ignore les lignes "Tax", "Total", etc.
-        if (/^(Tax|Total|Document|GBP)$/i.test(ref)) continue;
+        // Vérification minimale
+        if (isNaN(qty) || isNaN(price) || isNaN(total)) continue;
 
         articles.push({
-            ref: ref,
-            designation: designation.trim(),
+            ref,
+            designation,
             quantite: qty,
             prix: price,
             remise: discount,
-            total: total
+            total
         });
     }
 
     return articles;
 }
 
-
-  
 function parserTexte(texte, deviseGlobale) {
 console.log(">>> parseTexte appelé");
 // 🔥 Détection Natgraph (infaillible)
@@ -911,18 +910,6 @@ const isNatgraph =
 
 if (isNatgraph) {
     console.log(">>> Détection Natgraph OK");
-// 🔥 Supprimer toutes les lignes EUR générées par l’OCR
-texte = texte
-    .split("\n")
-    .map(l => l.trim())
-    .filter(l => l.length > 0)
-    .filter(l => !/€/.test(l))
-    .filter(l => !/×/.test(l))
-    .filter(l => !/%/.test(l))
-    .filter(l => !/EUR/i.test(l))
-    .join("\n");
-
-  
 return { articles: parseNatgraph(texte), devise: "GBP" };
 }
 
