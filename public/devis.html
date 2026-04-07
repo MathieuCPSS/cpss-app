@@ -939,9 +939,9 @@ if (isSakurai) {
 
   lignes.forEach(ligne => {
     if (reIgnore.test(ligne)) return;
-}
+
     // Découper par tabulations ou 2+ espaces d'abord
-    let cols = (ligne.split(/\t+|\s{2,}/).map(c => c.trim()).filter(c => c.length > 0);
+    let cols = ligne.split(/\t+|\s{2,}/).map(c => c.trim()).filter(c => c.length > 0);
 
     // Si une seule colonne → tout est collé avec espaces simples
     // On extrait les nombres depuis la fin de la ligne
@@ -1019,6 +1019,7 @@ if (isSakurai) {
 
     designation = designation.replace(/[€£$]|EUR|GBP|USD|CHF/g, '').replace(/\s{2,}/g, ' ').trim();
     if (designation.length < 2) return;
+    });
 // 🔥 Extraction Natgraph PREMIUM
 if (isNatgraph) {
 
