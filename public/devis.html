@@ -911,6 +911,18 @@ const isNatgraph =
 
 if (isNatgraph) {
     console.log(">>> Détection Natgraph OK");
+// 🔥 Supprimer toutes les lignes EUR générées par l’OCR
+texte = texte
+    .split("\n")
+    .map(l => l.trim())
+    .filter(l => l.length > 0)
+    .filter(l => !/€/.test(l))
+    .filter(l => !/×/.test(l))
+    .filter(l => !/%/.test(l))
+    .filter(l => !/EUR/i.test(l))
+    .join("\n");
+
+  
 return { articles: parseNatgraph(texte), devise: "GBP" };
 
     const lignesFiltrees = texte
