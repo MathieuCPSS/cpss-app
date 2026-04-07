@@ -854,99 +854,47 @@ if (match) {
     return items;
 }
 function parseNatgraph(texte) {
-    const raw = texte
+    const lignes = texte
         .split("\n")
         .map(l => l.trim())
         .filter(l => l.length > 0);
 
-    const lignes = [];
-    const refRegex = /^[A-Z0-9]{2,}-[A-Z0-9]{2,}/;
-
-    // Fusion douce
-    for (let i = 0; i < raw.length; i++) {
-        const line = raw[i];
-        if (refRegex.test(line)) {
-            const next = raw[i + 1];
-            if (next && !refRegex.test(next) && !/^Serial\b/i.test(next)) {
-                lignes.push(line + " " + next);
-                i++;
-            } else {
-                lignes.push(line);
-            }
-        }
-    }
-
     const articles = [];
 
     for (const ligne of lignes) {
-        const clean = ligne.replace(/\t/g, ' ').replace(/\s+/g, ' ').trim();
-        if (!clean) continue;
 
-        // Ignorer Serial
-        if (/^Serial\b/i.test(clean)) continue;
+        const cols = ligne
+            .replace(/\t/g, '    ')
+            .split(/\s{2,}/)
+            .map(c => c.trim())
+            .filter(c => c.length > 0);
 
-        // Extraire ref
-        const refMatch = clean.match(/^([A-Z0-9\-]+)\s+(.*)$/);
-        if (!refMatch) continue;
-
-        const ref = refMatch[1];
-        let rest = refMatch[2];
-
-        // PACKING / FREIGHT
-        if (/^(PACKING|FREIGHT)$/i.test(ref)) {
-            const nums = [...rest.matchAll(/\d[\d.,]*/g)];
-            const qty = parseFloat(nums[0]?.[0]?.replace(',', '.')) || 1;
-            const pu  = parseFloat(nums[1]?.[0]?.replace(',', '.')) || 0;
-            articles.push({
-                ref,
-                designation: ref,
-                quantite: qty,
-                pu,
-                remise: 0,
-                prix: pu * qty,
-                total: pu * qty
-            });
+        // Ignorer les lignes d'en-tête ou totaux
+        if (/^(Total|Tax|Document|BANK|TERMS|ACCOUNT|SWIFT|IBAN|Registered|All)/i.test(cols[0])) {
             continue;
         }
 
-        // 🔥 Extraire TOUS les nombres
-        const nums = [...rest.matchAll(/\d[\d.,]*/g)];
+        if (cols.length < 6) continue;
 
-        // 🔥 Chercher le premier bloc de 4 nombres consécutifs
-        let block = null;
-        for (let i = 0; i <= nums.length - 4; i++) {
-            const a = parseFloat(nums[i][0].replace(',', '.'));
-            const b = parseFloat(nums[i+1][0].replace(',', '.'));
-            const c = parseFloat(nums[i+2][0].replace(',', '.'));
-            const d = parseFloat(nums[i+3][0].replace(',', '.'));
+        const ref = cols[0];
+        const designation = cols[1];
+        const quantite = parseFloat(cols[2].replace(',', '.'));
+        const pu = parseFloat(cols[3].replace(',', '.'));          // prix unitaire fournisseur
+        const remise = parseFloat(cols[4].replace(',', '.'));      // remise %
+        
+        if (isNaN(quantite) || isNaN(pu)) continue;
 
-            // Heuristique Natgraph : QTY est un entier raisonnable
-            if (Number.isFinite(a) && a > 0 && a < 1000 &&
-                Number.isFinite(b) && b > 0 &&
-                Number.isFinite(c) && c >= 0 && c <= 100 &&
-                Number.isFinite(d) && d > 0) {
-                block = [nums[i], nums[i+1], nums[i+2], nums[i+3]];
-                break;
-            }
-        }
-
-        if (!block) continue;
-
-        const qty    = parseFloat(block[0][0].replace(',', '.'));
-        const pu     = parseFloat(block[1][0].replace(',', '.'));
-        const remise = parseFloat(block[2][0].replace(',', '.'));
-
-        const firstNumIndex = block[0].index;
-        const designation = rest.slice(0, firstNumIndex).trim();
+        // 👉 On ignore le total Natgraph (cols[5])
+        // 👉 On laisse l’app recalculer prixAchat = pu × quantite
 
         articles.push({
             ref,
             designation,
-            quantite: qty,
+            quantite,
             pu,
             remise,
-            prix: pu * qty,
-            total: pu * qty
+            prix: pu * quantite,   // 🔥 prix d’achat calculé par nous
+            total: pu * quantite   // 🔥 cohérent avec le reste de l’app
         });
     }
 
