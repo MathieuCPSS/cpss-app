@@ -913,6 +913,8 @@ const isNatgraph =
 if (isNatgraph) {
     console.log(">>> Détection Natgraph OK");
     return { articles: parseNatgraph(texte), devise: "GBP" };
+      console.log(">>> RESULTAT NATGRAPH :", result);
+    return result;
 }
 
 
