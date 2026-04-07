@@ -1023,23 +1023,6 @@ if (isSakurai) {
 
     designation = designation.replace(/[€£$]|EUR|GBP|USD|CHF/g, '').replace(/\s{2,}/g, ' ').trim();
     if (designation.length < 2) return;
-    // 🔥 Extraction Natgraph fiable : les 4 derniers nombres = qty, pu, remise, total
-if (isNatgraph) {
-    const nums = (ligne.match(/\d+[\.,]?\d*/g) || [])
-        .map(n => parseFloat(n.replace(',', '.')));
-
-    if (nums.length >= 4) {
-        quantite  = nums[nums.length - 4];
-        pu        = nums[nums.length - 3];
-        remise    = nums[nums.length - 2];
-        prixAchat = nums[nums.length - 1];
-    }
-}
-    // 🔥 Correction PU pour Natgraph : si PU = 0 mais total > 0 → recalculer
-if (isNatgraph && pu === 0 && prixAchat > 0 && quantite > 0) {
-    pu = prixAchat / quantite;
-}
-
 
     articles.push({ ref, designation, quantite, pu, remise, total: prixAchat, prix: prixAchat });
   });
