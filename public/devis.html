@@ -429,14 +429,14 @@
     <h2>Source du devis fournisseur</h2>
 
     <div class="tabs">
-      <button class="tab active" onclick="switchTab('paste')">📋 Coller HTML / texte</button>
-      <button class="tab" onclick="switchTab('file')">📄 PDF / Image</button>
+      <button class="tab active" onclick="switchTab('paste')">📋 Coller HTML </button>
+      <button class="tab" onclick="switchTab('file')">📄 PDF </button>
       <button class="tab" onclick="switchTab('manual')">✏️ Saisie manuelle</button>
     </div>
 
     <!-- Onglet coller -->
     <div class="tab-content active" id="tab-paste">
-      <textarea id="pasteArea" placeholder="Collez ici le contenu HTML ou texte du devis fournisseur...&#10;&#10;Format accepté : Référence  Désignation  Qté  Prix unit.  Remise  Total&#10;Le parser détecte automatiquement les colonnes disponibles."></textarea>
+      <textarea id="pasteArea" placeholder="Collez ici le contenu HTML de Sakurai...&#10;&#10;Format accepté : Référence  Désignation  Qté  Prix unit.  Remise  Total&#10;Le parser détecte automatiquement les colonnes disponibles."></textarea>
     </div>
 
     <!-- Onglet fichier -->
@@ -444,9 +444,9 @@
       <div class="file-drop" id="fileDrop">
         <input type="file" id="fileInput" accept=".pdf,image/*,.png,.jpg,.jpeg,.webp" onchange="handleFile(this.files[0])">
         <div class="icon">📎</div>
-        <p><strong>Cliquez ou glissez</strong> un fichier PDF ou une image</p>
-        <p>PDF ou image — analysé localement, <strong>gratuit, aucun envoi de données</strong></p>
-        <p style="margin-top:8px; font-size:11px; color:var(--accent);">💡 Vous pouvez aussi faire <strong>Ctrl+V</strong> pour coller une capture d'écran ou une image</p>
+        <p><strong>Cliquez ou glissez</strong> un fichier PDF Natgraph </p>
+        <p>PDF — analysé localement, <strong>gratuit, aucun envoi de données</strong></p>
+        <p style="margin-top:8px; font-size:11px; color:var(--accent);"></p>
       </div>
       <div class="file-preview" id="filePreview">✓ Fichier chargé : <span id="fileName"></span></div>
     </div>
