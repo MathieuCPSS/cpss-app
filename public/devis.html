@@ -939,7 +939,7 @@ if (isSakurai) {
 
   lignes.forEach(ligne => {
     if (reIgnore.test(ligne)) return;
-
+}
     // Découper par tabulations ou 2+ espaces d'abord
     let cols = ligne.split(/\t+|\s{2,}/).map(c => c.trim()).filter(c => c.length > 0);
 
