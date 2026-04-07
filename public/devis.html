@@ -863,83 +863,62 @@ function parseNatgraph(texte) {
 
     for (const ligne of lignes) {
 
-        // 🔥 Ignorer les lignes de calcul internes (qté pu remise total)
-        // Exemple : "1.00 53.55 15.00 22.36"
+        // Ignorer les lignes de calcul internes (qté pu remise total)
         if (/^\d+[\d.,]*\s+\d+[\d.,]*\s+\d+[\d.,]*\s+\d+[\d.,]*$/.test(ligne)) {
             continue;
         }
 
-        // Normalisation : tab → espace
-        let cols = ligne
-            .replace(/\t/g, ' ')
-            .replace(/\s{2,}/g, '  ')
-            .split(/ {2,}/)
-            .map(c => c.trim())
-            .filter(c => c.length > 0);
+        // Normalisation simple
+        const clean = ligne.replace(/\t/g, ' ').replace(/\s+/g, ' ').trim();
+        if (!clean) continue;
 
-        if (cols.length === 0) continue;
+        const firstTokenMatch = clean.match(/^([A-Z0-9\-]+)\s+(.*)$/);
+        if (!firstTokenMatch) continue;
 
-        // 🔥 Ignorer les lignes Serial
-        if (/^serial\b/i.test(cols[0])) {
-            continue;
-        }
+        const ref = firstTokenMatch[1];
+        let rest = firstTokenMatch[2];
 
-        // Ignorer les lignes d'en-tête ou totaux
-        if (/^(Total|Tax|Document|BANK|TERMS|ACCOUNT|SWIFT|IBAN|Registered|All)/i.test(cols[0])) {
-            continue;
-        }
+        // Ignorer Serial, PACKING, FREIGHT, etc.
+        if (/^(serial)$/i.test(ref)) continue;
+        if (/^(PACKING|FREIGHT)$/i.test(ref)) continue;
+        if (/^(Total|Tax|Document|BANK|TERMS|ACCOUNT|SWIFT|IBAN|Registered|All)$/i.test(ref)) continue;
 
-        // 🔥 Fallback si OCR a collé toute la ligne
-        if (cols.length < 6) {
-            const nums = [...ligne.matchAll(/\d[\d.,]*/g)].map(m => m[0]);
+        // Récupérer tous les nombres dans le reste de la ligne
+        const numMatches = [...rest.matchAll(/\d[\d.,]*/g)];
+        if (numMatches.length < 4) continue;
 
-            if (nums.length >= 4) {
-                const qty    = parseFloat(nums[nums.length - 4].replace(',', '.'));
-                const pu     = parseFloat(nums[nums.length - 3].replace(',', '.'));
-                const remise = parseFloat(nums[nums.length - 2].replace(',', '.'));
+        // On prend les 4 DERNIERS nombres : qty, pu, remise, total
+        const n4 = numMatches.slice(-4);
+        const qtyRaw    = n4[0][0];
+        const puRaw     = n4[1][0];
+        const remiseRaw = n4[2][0];
+        const totalRaw  = n4[3][0];
 
-                const ref = ligne.split(/\s+/)[0];
-                const designation = ligne.replace(ref, '').trim();
+        const quantite = parseFloat(qtyRaw.replace(',', '.'));
+        const pu       = parseFloat(puRaw.replace(',', '.'));
+        const remise   = parseFloat(remiseRaw.replace(',', '.'));
+        // const total    = parseFloat(totalRaw.replace(',', '.')); // pas nécessaire pour Sage
 
-                if (!isNaN(qty) && !isNaN(pu)) {
-                    articles.push({
-                        ref,
-                        designation,
-                        quantite: qty,
-                        pu,
-                        remise,
-                        prix: pu * qty,
-                        total: pu * qty
-                    });
-                }
-                continue;
-            }
-        }
+        if (isNaN(quantite) || isNaN(pu)) continue;
 
-        // 🔥 Parsing normal
-        if (cols.length >= 6) {
-            const ref         = cols[0];
-            const designation = cols[1];
-            const quantite    = parseFloat(cols[2].replace(',', '.'));
-            const pu          = parseFloat(cols[3].replace(',', '.'));
-            const remise      = parseFloat(cols[4].replace(',', '.'));
+        // Désignation = tout ce qu’il y a avant le premier des 4 derniers nombres
+        const firstNumIndex = n4[0].index;
+        const designation = rest.slice(0, firstNumIndex).trim();
 
-            if (!isNaN(quantite) && !isNaN(pu)) {
-                articles.push({
-                    ref,
-                    designation,
-                    quantite,
-                    pu,
-                    remise,
-                    prix: pu * quantite,
-                    total: pu * quantite
-                });
-            }
-        }
+        articles.push({
+            ref,
+            designation,
+            quantite,
+            pu,
+            remise,
+            prix: pu * quantite,
+            total: pu * quantite
+        });
     }
 
     return articles;
 }
+
 
 function parserTexte(texte, deviseGlobale) {
  console.log(">>> VERSION PARSER ACTUELLE = 2025-04-07-19h24");
