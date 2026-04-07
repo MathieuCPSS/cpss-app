@@ -924,48 +924,6 @@ texte = texte
 
   
 return { articles: parseNatgraph(texte), devise: "GBP" };
-
-    const lignesFiltrees = texte
-        .split("\n")
-        .map(l => l.trim())
-        .filter(l => l.length > 0)
-
-        // ❌ Lignes parasites (texte, adresse, banque, etc.)
-        .filter(l => !/^(Call|Email|Visit):/i.test(l))
-        .filter(l => !/^(INVOICE|DATE\/TAX|ORDER NO|COURIER|DELIVERY|TRACKING)/i.test(l))
-        .filter(l => !/^(A\/C CODE|HS CODE|EORI|VAT)/i.test(l))
-        .filter(l => !/^(Product Code|OVERSEAS)/i.test(l))
-        .filter(l => !/^(PLEASE SEE|SERIAL|Registered in England)/i.test(l))
-        .filter(l => !/^(BANK|TERMS|SORT CODE|ACCOUNT NO|SWIFT|IBAN)/i.test(l))
-        .filter(l => !/^Total\s/i.test(l))
-        .filter(l => !/Document total/i.test(l))
-        .filter(l => !/Company No/i.test(l))
-        .filter(l => !/All transactions/i.test(l))
-
-        // ❌ Lignes multi-lignes parasites (ex: "mods -4 days)")
-        .filter(l => !/^\)/.test(l))
-        .filter(l => !/^\(.+\)$/.test(l))
-
-        // ✔ Garder les lignes SERVICE seulement si elles ressemblent à un article
-        .filter(l => {
-            if (/^SERVICE\b/i.test(l)) {
-                // On garde seulement si la ligne contient Qty + Total
-                const hasQty = /\b[0-9]+\.[0-9]+\b/.test(l);
-                const hasTotal = /\b[0-9]+\.[0-9]+\b/.test(l);
-                return hasQty && hasTotal;
-            }
-            return true;
-        })
-
-        // ✔ Garder les lignes pièces (codes)
-// Garder une ligne si elle contient au moins 2 nombres (Natgraph = qty + total)
-.filter(l => {
-    const nums = l.match(/\d+[\.,]?\d*/g);
-    return nums && nums.length >= 2;
-});
-
-
-    texte = lignesFiltrees.join("\n");
 }
 
 // Détection Sakurai (fiable)
