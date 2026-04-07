@@ -900,12 +900,12 @@ if (isNatgraph) {
         })
 
         // ✔ Garder les lignes pièces (codes)
-        .filter(l =>
-            /^SERVICE\b/i.test(l) ||
-            /^[0-9]{3}-[0-9]{4}/.test(l) ||
-            /^[A-Z0-9]{2,}-[0-9]/.test(l) ||
-            /\t[0-9]+\.[0-9]+\t/.test(l)
-        );
+// Garder une ligne si elle contient au moins 2 nombres (Natgraph = qty + total)
+.filter(l => {
+    const nums = l.match(/\d+[\.,]?\d*/g);
+    return nums && nums.length >= 2;
+});
+
 
     texte = lignesFiltrees.join("\n");
 }
