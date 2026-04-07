@@ -863,15 +863,18 @@ function parseNatgraph(texte) {
 
     for (const ligne of lignes) {
 
-        // Split Natgraph : tabulations OU espaces multiples
-        const cols = ligne.split(/\t+|\s{2,}/).map(c => c.trim());
+        // Normalisation : tab → 4 espaces
+        const cols = ligne
+            .replace(/\t/g, '    ')
+            .split(/\s{2,}/)
+            .map(c => c.trim())
+            .filter(c => c.length > 0);
 
         // Ignorer les lignes d'en-tête ou totaux
-        if (cols[0].match(/^(Total|Tax|Document|BANK|TERMS|ACCOUNT|SWIFT|IBAN|Registered|All)/i)) {
+        if (/^(Total|Tax|Document|BANK|TERMS|ACCOUNT|SWIFT|IBAN|Registered|All)/i.test(cols[0])) {
             continue;
         }
 
-        // Une ligne valide Natgraph a au moins 6 colonnes
         if (cols.length < 6) continue;
 
         const ref = cols[0];
