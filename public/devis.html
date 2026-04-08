@@ -681,11 +681,30 @@ async function analyser() {
     }
 
     // 👉 PDF continue d’utiliser analyserViaIA
-    analyserViaIA('fichier', null);
+    analyserPDFviaServeur(fileData);
     return;
   }
 }
+async function analyserPDFviaServeur(file) {
+  const form = new FormData();
+  form.append('pdf', file);
 
+  const res = await fetch('/api/parse-pdf', {
+    method: 'POST',
+    body: form
+  });
+
+  const data = await res.json();
+
+  if (data.error) {
+    showError(data.error);
+    return;
+  }
+
+  convertirEtAfficher(data.articles, 'EUR', 1);
+}
+
+  
 // ── Extraction PDF via PDF.js (local, gratuit) ───────────────────────────────
 async function extrairePDF(base64data) {
   if (!window.pdfjsLib) {
