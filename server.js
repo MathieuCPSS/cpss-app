@@ -291,38 +291,45 @@ app.get('/ping', (req, res) => res.send('pong'));
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
-function isComplexNatgraph(text) {
+const multer = require('multer');
+const upload = multer({ storage: multer.memoryStorage() });
+
+// Détecteur de complexité PDF (simple version)
+function isComplexPDF(text) {
   const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
 
   for (const l of lines) {
     if (/Serial\s*#/i.test(l)) return true;
-    if (/PACKING|FREIGHT/i.test(l) && l.split(/\s+/).length < 3) return true;
-    if (/\d+\s*x\s*\d+\s*x\s*\d+/i.test(l)) return true; // 152 x 152 x 18
+    if (/PACKING|FREIGHT/i.test(l)) return true;
+    if (/\d+\s*x\s*\d+\s*x\s*\d+/i.test(l)) return true; // dimensions
     if (/TBC/i.test(l)) return true;
     if (l.split(/\s{2,}/).length < 3) return true; // structure cassée
   }
 
   return false;
 }
-app.post('/api/parse', requireAuth, async (req, res) => {
-  try {
-    const { texte, source } = req.body;
 
-    if (!texte || typeof texte !== 'string') {
-      return res.status(400).json({ error: 'Texte manquant' });
+app.post('/api/parse-pdf', requireAuth, upload.single('pdf'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'Aucun fichier PDF reçu' });
     }
 
-    // 1) Détection complexité
-    const complexe = isComplexNatgraph(texte);
+    // 1) OCR local (Tesseract ou autre)
+    const pdfBuffer = req.file.buffer;
+    const texte = await ocrPDF(pdfBuffer); // tu me diras si tu veux que je te génère cette fonction
 
-    // 2) Si simple → parseur maison
+    // 2) Détection complexité
+    const complexe = isComplexPDF(texte);
+
+    // 3) Cas simple → parseur maison PDF
     if (!complexe) {
       const parseur = require('./public/api'); // ton parseur existant
-      const articles = parseur.parse(texte, source);
+      const articles = parseur.parsePDF(texte);
       return res.json({ mode: 'simple', articles });
     }
 
-    // 3) Si complexe → Claude
+    // 4) Cas complexe → Claude
     const apiKey = process.env.CLAUDE_API_KEY;
     if (!apiKey) {
       return res.status(500).json({ error: 'Claude non configuré' });
@@ -342,11 +349,11 @@ app.post('/api/parse', requireAuth, async (req, res) => {
         messages: [
           {
             role: "user",
-            content: `Analyse ce devis et renvoie uniquement un JSON strict sous forme d'array d'articles :
+            content: `Analyse ce devis PDF et renvoie uniquement un JSON strict :
 [
   { "ref": "...", "designation": "...", "quantite": 1, "pu": 0, "remise": 0 }
 ]
-Voici le texte :
+Voici le texte OCR :
 ${texte}`
           }
         ]
@@ -355,7 +362,6 @@ ${texte}`
 
     const data = await response.json();
 
-    // Claude renvoie du texte → on parse
     let articles = [];
     try {
       articles = JSON.parse(data.content[0].text);
@@ -366,10 +372,11 @@ ${texte}`
     return res.json({ mode: 'claude', articles });
 
   } catch (err) {
-    console.error('Erreur /api/parse :', err);
+    console.error('Erreur /api/parse-pdf :', err);
     res.status(500).json({ error: err.message });
   }
 });
+
 
 // ── Démarrage ─────────────────────────────────────────────────────────
 connectDB().then(() => {
