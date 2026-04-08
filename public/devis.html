@@ -748,7 +748,20 @@ return { texte: texteTotal, deviseGlobale };
 
 
 }
+async function extraireTextePDF(file) {
+  const pdf = await pdfjsLib.getDocument(URL.createObjectURL(file)).promise;
+  let texte = "";
 
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    texte += content.items.map(it => it.str).join(" ") + "\n";
+  }
+
+  return texte;
+}
+
+  
 // ── OCR image via PaddleOCR (serveur Fly.io) ─────────────────────────────────
 const PADDLE_OCR_URL = 'http://localhost:8080/ocr'; // ← à mettre à jour après déploiement
 
