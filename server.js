@@ -318,7 +318,7 @@ async function ocrPDF(pdfBuffer) {
     method: "POST",
     headers: {
       "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
+      "anthropic-version": "2023-10-01",
       "content-type": "application/json"
     },
     body: JSON.stringify({
@@ -394,7 +394,7 @@ app.post('/api/parse-pdf', requireAuth, upload.single('pdf'), async (req, res) =
       method: "POST",
       headers: {
         "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
+        "anthropic-version": "2023-10-01",
         "content-type": "application/json"
       },
       body: JSON.stringify({
