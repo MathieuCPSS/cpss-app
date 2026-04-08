@@ -1071,12 +1071,12 @@ async function analyserPDFviaServeur(file) {
       /\bDiscount\s*%/i.test(texte) ||
       /\bHandelsbanken\b/i.test(texte);
 
-  if (isNatgraphSimple) {
-      console.log("Natgraph simple → parseur local");
-      const result = parserTexte(texte, deviseGlobale);
-      afficherResultats(result.articles, result.devise);
-      return;
-  }
+if (isNatgraphSimple) {
+    console.log("Natgraph simple → parseur local");
+    const result = parserTexte(texte, deviseGlobale);
+    convertirEtAfficher(result.articles, result.devise, 'auto');
+    return;
+}
 
   // 3) Sinon → Claude
   console.log("Natgraph complexe → Claude");
