@@ -362,6 +362,7 @@ Rends uniquement le texte brut, avec les sauts de ligne.`
 
 
 
+
 app.post('/api/parse-pdf', requireAuth, upload.single('pdf'), async (req, res) => {
   try {
     if (!req.file) {
