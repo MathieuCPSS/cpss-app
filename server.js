@@ -330,9 +330,12 @@ async function ocrPDF(pdfBuffer) {
           role: "user",
           content: [
             {
-              type: "document",          // 🔥 correction ici
-              media_type: "application/pdf",
-              data: base64
+              type: "document",
+              source: {
+                type: "base64",
+                media_type: "application/pdf",
+                data: base64
+              }
             },
             {
               type: "text",
@@ -356,6 +359,7 @@ Rends uniquement le texte brut, avec les sauts de ligne.`
 
   return data.content[0].text;
 }
+
 
 
 app.post('/api/parse-pdf', requireAuth, upload.single('pdf'), async (req, res) => {
