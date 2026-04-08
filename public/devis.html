@@ -1192,50 +1192,60 @@ function afficherResultats(articles, devise, taux) {
 
   let totalAchat = 0, totalVente = 0;
 
-const puAchat = parseFloat(art.puConverti || art.pu) || 0;
-const quantite = parseFloat(art.quantite) || 1;
-const remise = parseFloat(art.remise) || 0;
+  articles.forEach((art, i) => {
 
-const coeff = getCoeff(puAchat);
+    // --- Données de base ---
+    const puAchat = parseFloat(art.puConverti || art.pu) || 0;
+    const quantite = parseFloat(art.quantite) || 1;
+    const remise = parseFloat(art.remise) || 0;
 
-// 🔥 Nouveau : PU vente = PU achat × coeff
-const puVente = puAchat * coeff;
+    // --- Coeff ---
+    const coeff = getCoeff(puAchat);
 
-// 🔥 Nouveau : Prix vente = PU vente × quantité
-const prixVente = puVente * quantite;
+    // --- Nouveau : PU vente ---
+    const puVente = puAchat * coeff;
 
-totalAchat += puAchat * quantite;   // total achat reste cohérent
-totalVente += prixVente;
+    // --- Nouveau : Prix vente total ---
+    const prixVente = puVente * quantite;
 
+    // --- Totaux ---
+    totalAchat += puAchat * quantite;
+    totalVente += prixVente;
 
-    const origInfo = art.deviseOriginale
-      ? `<br><span style="font-size:10px;color:var(--text-muted);">${art.prixOriginal?.toFixed(2)} ${art.deviseOriginale}</span>`
-      : '';
-    const totalGBP = art.deviseOriginale && art.prixOriginal
-      ? `<br><span style="font-size:10px;color:var(--text-muted);">${art.prixOriginal.toFixed(2)} ${art.deviseOriginale}</span>`
-      : '';
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td class="ref">${escHtml(art.ref || '—')}</td>
       <td>${escHtml(art.designation || '')}</td>
+
+      <!-- Qté -->
       <td class="prix" style="text-align:right;">${quantite}</td>
+
+      <!-- PU achat HT -->
       <td class="prix" style="text-align:right;">
-        ${art.puConverti ? art.puConverti.toFixed(2) + ' €' : (art.pu || 0).toFixed(2) + ' €'}
-        ${art.deviseOriginale ? '<br><span style="font-size:10px;color:var(--text-muted);">' + (art.pu || 0).toFixed(2) + ' ' + art.deviseOriginale + '</span>' : ''}
+        ${puAchat.toFixed(2)} €
       </td>
 
-  <!-- Colonne PRIX ACHAT = TOTAL -->
-
-
-      <td class="prix">
-        <input class="prix-input" type="number" step="0.01" value="${prix.toFixed(2)}"
-          onchange="recalcLigne(this, ${i})" onblur="recalcLigne(this, ${i})">
-        ${origInfo}
+      <!-- PU vente HT (nouvelle colonne) -->
+      <td class="prix" style="text-align:right;">
+        ${puVente.toFixed(2)} €
       </td>
-      <td class="prix" style="text-align:right;">${remise > 0 ? remise + '%' : '—'}</td>
-      <td style="text-align:right;" id="coeff_${i}">${coeffLabel(coeff)}</td>
-      <td class="prix-vente" id="vente_${i}">${fmt(prixVente)}</td>
+
+      <!-- Remise -->
+      <td class="prix" style="text-align:right;">
+        ${remise > 0 ? remise + '%' : '—'}
+      </td>
+
+      <!-- Coeff -->
+      <td style="text-align:right;" id="coeff_${i}">
+        ${coeffLabel(coeff)}
+      </td>
+
+      <!-- Prix vente total -->
+      <td class="prix-vente" id="vente_${i}">
+        ${fmt(prixVente)}
+      </td>
     `;
+
     tbody.appendChild(tr);
   });
 
@@ -1247,19 +1257,29 @@ totalVente += prixVente;
 }
 
 function recalcLigne(input, i) {
-  const prix = parseFloat(input.value) || 0;
-  articlesData[i].prix = prix;
-  const coeff = getCoeff(prix);
-  const prixVente = prix * coeff;
+  const puAchat = parseFloat(input.value) || 0;
+  articlesData[i].pu = puAchat;
+
+  const quantite = parseFloat(articlesData[i].quantite) || 1;
+  const coeff = getCoeff(puAchat);
+
+  const puVente = puAchat * coeff;
+  const prixVente = puVente * quantite;
+
   document.getElementById('coeff_' + i).innerHTML = coeffLabel(coeff);
   document.getElementById('vente_' + i).textContent = fmt(prixVente);
 
   let totalAchat = 0, totalVente = 0;
+
   articlesData.forEach(a => {
-    const p = parseFloat(a.prix) || 0;
-    totalAchat += p;
-    totalVente += p * getCoeff(p);
+    const pu = parseFloat(a.pu) || 0;
+    const q = parseFloat(a.quantite) || 1;
+    const c = getCoeff(pu);
+
+    totalAchat += pu * q;
+    totalVente += (pu * c) * q;
   });
+
   majTotaux(totalAchat, totalVente);
 }
 
