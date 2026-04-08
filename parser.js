@@ -13,6 +13,9 @@ function parseNombre(s) {
 
 // ── Parseur Natgraph ──────────────────────────────────────────────────
 function parseNatgraph(texte) {
+  console.log("OCR local simple >>>");
+console.log(texte);
+console.log("<<< OCR local simple");
   const lignes = texte
     .split('\n')
     .map(l => l.trim())
