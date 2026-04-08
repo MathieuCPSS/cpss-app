@@ -398,7 +398,7 @@ app.post('/api/parse-pdf', requireAuth, upload.single('pdf'), async (req, res) =
         "content-type": "application/json"
       },
       body: JSON.stringify({
-        model: "claude-3-sonnet-20240229",
+        model: "claude-3-5-sonnet-latest",
         max_tokens: 2000,
         temperature: 0,
         messages: [
