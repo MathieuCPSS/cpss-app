@@ -920,143 +920,125 @@ function parseNatgraph(texte) {
     return articles;
 }
 
-
-
 function parserTexte(texte, deviseGlobale) {
- console.log(">>> VERSION PARSER ACTUELLE = 2025-04-07-19h24");
- 
-console.log(">>> parseTexte appelé");
-// 🔥 Détection Natgraph (infaillible)
-const isNatgraph =
-    /Product\s+Code/i.test(texte) ||
-    /Total\s+GBP/i.test(texte) ||
-    /\bDiscount\s*%/i.test(texte) ||
-    /\bHandelsbanken\b/i.test(texte) ||
-    /\bEORI\b/i.test(texte) ||
-    /\bA\/C CODE\b/i.test(texte);
+    console.log(">>> VERSION PARSER ACTUELLE = 2025-04-07-19h24");
+    console.log(">>> parseTexte appelé");
 
-if (isNatgraph) {
-    console.log(">>> Détection Natgraph OK");
-    const result = { articles: parseNatgraph(texte), devise: "GBP" };
-    console.log(">>> RESULTAT NATGRAPH :", result);
-    return result;
-}
+    // 🔥 1) Détection centralisée via parser.js
+    const format = detectFormat(texte);
+    console.log(">>> detectFormat =", format);
 
-// Détection Sakurai (fiable)
-const isSakurai =
-    /Attach\b/i.test(texte) ||
-    /Checking Parts No\./i.test(texte) ||
-    /Over\s*\d*month/i.test(texte) ||
-    /\bParts No\b.*\bParts Name\b/i.test(texte);
-
-if (isSakurai) {
-    console.log(">>> Détection Sakurai OK");
-    const articles = parseSakurai(texte);
-    return { articles, devise: "EUR" };
-}
-
-  let devise = deviseGlobale || 'EUR';
-  if (/[£]|GBP/i.test(texte)) devise = 'GBP';
-  else if (/USD/i.test(texte)) devise = 'USD';
-  else if (/CHF/i.test(texte)) devise = 'CHF';
-
-  const NL = String.fromCharCode(10);
-  const lignes = texte.split(NL).map(l => l.trim()).filter(l => l.length > 2);
-  const articles = [];
-
-  const reIgnore = /^(product.?code|product.?desc|ref[eé]?|description|item|qty|qté|quantity|unit|price|prix|total|montant|ht|ttc|tva|amount|subtotal|discount|remise|invoice|facture|quote|devis|customer|client|date|page|tel|fax|email|www|http|bank|account|terms|payment|vat|company|address|registered|sort.?code)/i;
-
-  // Regex pour un nombre décimal (accepte aussi "100" qui vient de "1.00" mal reconnu)
-  const reNum = /^\d+([.,]\d+)?$/;
-
-  lignes.forEach(ligne => {
-    if (reIgnore.test(ligne)) return;
-
-    // Découper par tabulations ou 2+ espaces d'abord
-    let cols = ligne.split(/\t+|\s{2,}/).map(c => c.trim()).filter(c => c.length > 0);
-
-    // Si une seule colonne → tout est collé avec espaces simples
-    // On extrait les nombres depuis la fin de la ligne
-    if (cols.length <= 2) {
-      // Séparer par espaces simples
-      const mots = ligne.split(/\s+/);
-      // Ramasser les nombres depuis la droite
-      const nbsDroite = [];
-      let i = mots.length - 1;
-      while (i >= 0 && nbsDroite.length < 4) {
-        const v = parseNombre(mots[i]);
-        if (v !== null) { nbsDroite.unshift({ raw: mots[i], val: v, idx: i }); i--; }
-        else break;
-      }
-      if (nbsDroite.length === 0) return;
-      // Le reste = texte (ref + désignation)
-      const texteGauche = mots.slice(0, nbsDroite[0].idx).join(' ').trim();
-      cols = texteGauche ? [texteGauche, ...nbsDroite.map(n => n.raw)] : nbsDroite.map(n => n.raw);
+    // 🔥 2) Natgraph complexe → Claude
+    if (format === 'natgraph-complex') {
+        console.log(">>> Natgraph COMPLEXE détecté → Claude");
+        return { mode: "natgraph-complex" };
     }
 
-    // Identifier colonnes numériques
-    const parsed = cols.map(c => ({ raw: c, val: parseNombre(c) }));
-    const nombres = parsed.filter(c => c.val !== null);
-    const colsTexte = parsed.filter(c => c.val === null).map(c => c.raw);
-
-    // Filtrer nombres parasites (>= 10000 = code, < 0)
-    const nbsSig = nombres.filter(n => n.val >= 0 && n.val < 10000);
-    if (nbsSig.length === 0) return;
-
-    // Prix achat = dernier nombre (total ligne), ignorer les 0
-    const nbsNonZero = nbsSig.filter(n => n.val > 0);
-    if (nbsNonZero.length === 0) return; // ligne à 0 ignorée
-    let prixAchat = nbsNonZero[nbsNonZero.length - 1].val;
-
-    // PU = avant-dernier nombre non-zéro si plusieurs
-    let pu = prixAchat;
-    let quantite = 1;
-    let remise = 0;
-
-    if (nbsSig.length >= 3) {
-      // Structure : Qté | PU | Remise% | Total
-      // On cherche : qty=premier si entier<=999, remise=valeur<100 avec décimale, total=dernier
-      const premier = nbsSig[0].val;
-      if (Number.isInteger(premier) || premier <= 100) quantite = premier;
-
-      // Remise = valeur entre 0 et 100 qui ressemble à un %
-      const candidatRemise = nbsSig.find((n, idx) => idx > 0 && n.val > 0 && n.val <= 100 && n.val !== prixAchat);
-      if (candidatRemise) remise = candidatRemise.val;
-
-      // PU = valeur avant le total, après la qté
-      const milieu = nbsSig.filter(n => n !== nbsSig[0] && n.val !== prixAchat && n.val !== (candidatRemise ? candidatRemise.val : -1));
-      if (milieu.length > 0) pu = milieu[milieu.length - 1].val;
-
-    } else if (nbsSig.length === 2) {
-      const n0 = nbsSig[0].val, n1 = nbsSig[1].val;
-      if (n0 <= 999 && n0 >= 1) { quantite = n0; pu = n1; }
-      else { pu = n0; }
+    // 🔥 3) Natgraph simple → parseur local
+    if (format === 'natgraph-simple') {
+        console.log(">>> Natgraph SIMPLE détecté → parseNatgraph local");
+        const articles = parseNatgraph(texte);
+        return { articles, devise: "GBP" };
     }
 
-    // Texte → ref + désignation
-    if (colsTexte.length === 0) return;
-    let ref = '', designation = '';
-    const reRef = /^[A-Z0-9][A-Z0-9\-\/\.]{1,24}$/;
-    if (colsTexte.length >= 2 && reRef.test(colsTexte[0])) {
-      ref = colsTexte[0];
-      designation = colsTexte.slice(1).join(' ');
-    } else if (colsTexte.length === 1) {
-      // Essayer de séparer ref et désignation dans la même chaîne
-      const match = colsTexte[0].match(/^([A-Z0-9][A-Z0-9\-\/\.]{1,24})\s+(.+)$/);
-      if (match) { ref = match[1]; designation = match[2]; }
-      else { designation = colsTexte[0]; }
-    } else {
-      designation = colsTexte.join(' ');
+    // 🔥 4) Sakurai → parseur local
+    if (format === 'sakurai') {
+        console.log(">>> Sakurai détecté → parseSakurai local");
+        const articles = parseSakurai(texte);
+        return { articles, devise: "EUR" };
     }
 
-    designation = designation.replace(/[€£$]|EUR|GBP|USD|CHF/g, '').replace(/\s{2,}/g, ' ').trim();
-    if (designation.length < 2) return;
+    // 🔥 5) Fallback générique (inchangé)
+    console.log(">>> Format inconnu → fallback générique");
 
-    articles.push({ ref, designation, quantite, pu, remise, total: prixAchat, prix: prixAchat });
-  });
+    let devise = deviseGlobale || 'EUR';
+    if (/[£]|GBP/i.test(texte)) devise = 'GBP';
+    else if (/USD/i.test(texte)) devise = 'USD';
+    else if (/CHF/i.test(texte)) devise = 'CHF';
 
-  return { articles, devise };
+    const NL = String.fromCharCode(10);
+    const lignes = texte.split(NL).map(l => l.trim()).filter(l => l.length > 2);
+    const articles = [];
+
+    const reIgnore = /^(product.?code|product.?desc|ref[eé]?|description|item|qty|qté|quantity|unit|price|prix|total|montant|ht|ttc|tva|amount|subtotal|discount|remise|invoice|facture|quote|devis|customer|client|date|page|tel|fax|email|www|http|bank|account|terms|payment|vat|company|address|registered|sort.?code)/i;
+    const reNum = /^\d+([.,]\d+)?$/;
+
+    lignes.forEach(ligne => {
+        if (reIgnore.test(ligne)) return;
+
+        let cols = ligne.split(/\t+|\s{2,}/).map(c => c.trim()).filter(c => c.length > 0);
+
+        if (cols.length <= 2) {
+            const mots = ligne.split(/\s+/);
+            const nbsDroite = [];
+            let i = mots.length - 1;
+            while (i >= 0 && nbsDroite.length < 4) {
+                const v = parseNombre(mots[i]);
+                if (v !== null) { nbsDroite.unshift({ raw: mots[i], val: v, idx: i }); i--; }
+                else break;
+            }
+            if (nbsDroite.length === 0) return;
+            const texteGauche = mots.slice(0, nbsDroite[0].idx).join(' ').trim();
+            cols = texteGauche ? [texteGauche, ...nbsDroite.map(n => n.raw)] : nbsDroite.map(n => n.raw);
+        }
+
+        const parsed = cols.map(c => ({ raw: c, val: parseNombre(c) }));
+        const nombres = parsed.filter(c => c.val !== null);
+        const colsTexte = parsed.filter(c => c.val === null).map(c => c.raw);
+
+        const nbsSig = nombres.filter(n => n.val >= 0 && n.val < 10000);
+        if (nbsSig.length === 0) return;
+
+        const nbsNonZero = nbsSig.filter(n => n.val > 0);
+        if (nbsNonZero.length === 0) return;
+        let prixAchat = nbsNonZero[nbsNonZero.length - 1].val;
+
+        let pu = prixAchat;
+        let quantite = 1;
+        let remise = 0;
+
+        if (nbsSig.length >= 3) {
+            const premier = nbsSig[0].val;
+            if (Number.isInteger(premier) || premier <= 100) quantite = premier;
+
+            const candidatRemise = nbsSig.find((n, idx) => idx > 0 && n.val > 0 && n.val <= 100 && n.val !== prixAchat);
+            if (candidatRemise) remise = candidatRemise.val;
+
+            const milieu = nbsSig.filter(n => n !== nbsSig[0] && n.val !== prixAchat && n.val !== (candidatRemise ? candidatRemise.val : -1));
+            if (milieu.length > 0) pu = milieu[milieu.length - 1].val;
+
+        } else if (nbsSig.length === 2) {
+            const n0 = nbsSig[0].val, n1 = nbsSig[1].val;
+            if (n0 <= 999 && n0 >= 1) { quantite = n0; pu = n1; }
+            else { pu = n0; }
+        }
+
+        if (colsTexte.length === 0) return;
+        let ref = '', designation = '';
+        const reRef = /^[A-Z0-9][A-Z0-9\-\/\.]{1,24}$/;
+
+        if (colsTexte.length >= 2 && reRef.test(colsTexte[0])) {
+            ref = colsTexte[0];
+            designation = colsTexte.slice(1).join(' ');
+        } else if (colsTexte.length === 1) {
+            const match = colsTexte[0].match(/^([A-Z0-9][A-Z0-9\-\/\.]{1,24})\s+(.+)$/);
+            if (match) { ref = match[1]; designation = match[2]; }
+            else { designation = colsTexte[0]; }
+        } else {
+            designation = colsTexte.join(' ');
+        }
+
+        designation = designation.replace(/[€£$]|EUR|GBP|USD|CHF/g, '').replace(/\s{2,}/g, ' ').trim();
+        if (designation.length < 2) return;
+
+        articles.push({ ref, designation, quantite, pu, remise, total: prixAchat, prix: prixAchat });
+    });
+
+    return { articles, devise };
 }
+
+
+
 
 async function analyserPDFviaServeur(file) {
 
