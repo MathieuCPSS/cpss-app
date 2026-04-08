@@ -330,7 +330,7 @@ async function ocrPDF(pdfBuffer) {
           role: "user",
           content: [
             {
-              type: "input_file",
+              type: "document",          // 🔥 correction ici
               media_type: "application/pdf",
               data: base64
             },
@@ -350,13 +350,13 @@ Rends uniquement le texte brut, avec les sauts de ligne.`
   const data = await response.json();
   console.log("Réponse Claude OCR :", data);
 
-
   if (!data.content || !data.content[0] || !data.content[0].text) {
     throw new Error("OCR Claude : réponse invalide");
   }
 
   return data.content[0].text;
 }
+
 
 app.post('/api/parse-pdf', requireAuth, upload.single('pdf'), async (req, res) => {
   try {
