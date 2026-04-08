@@ -598,13 +598,19 @@ let fileType = null;
 
 function handleFile(file) {
   if (!file) return;
+
+  // 🔥 On stocke le vrai fichier PDF pour l'envoyer au serveur
+  pdfFile = file;
+
   document.getElementById('fileName').textContent = file.name;
   document.getElementById('filePreview').style.display = 'block';
 
+  // 🔥 On NE touche plus à pdfFile ici
+  // On peut extraire du texte localement si tu veux, mais dans une autre variable
   const reader = new FileReader();
   reader.onload = e => {
-    fileData = e.target.result.split(',')[1]; // base64
-    fileType = file.type;
+    const base64 = e.target.result.split(',')[1];
+    pdfText = base64; // si tu veux garder le texte ou base64 localement
   };
   reader.readAsDataURL(file);
 
@@ -614,18 +620,6 @@ function handleFile(file) {
   drop.style.background = 'rgba(109,191,138,0.05)';
 }
 
-// Drag & drop
-const fileDrop = document.getElementById('fileDrop');
-fileDrop.addEventListener('dragover', e => { e.preventDefault(); fileDrop.classList.add('drag-over'); });
-fileDrop.addEventListener('dragleave', () => fileDrop.classList.remove('drag-over'));
-fileDrop.addEventListener('drop', e => {
-  e.preventDefault();
-  fileDrop.classList.remove('drag-over');
-  if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
-});
-
-// ── Saisie manuelle ───────────────────────────────────────────────────────────
-let manualCount = 0;
 
 function ajouterLigneManuelle() {
   const id = manualCount++;
