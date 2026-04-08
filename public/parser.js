@@ -150,7 +150,7 @@ function parsePDF(texte) {
   return null;
 }
 
-module.exports = { parsePDF, detectFormat, parseNatgraph, parseSakurai, isNatgraphComplex };
+
 // Rendre les fonctions accessibles au front
 if (typeof window !== 'undefined') {
     window.detectFormat = detectFormat;
