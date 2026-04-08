@@ -348,6 +348,8 @@ Rends uniquement le texte brut, avec les sauts de ligne.`
   });
 
   const data = await response.json();
+  console.log("Réponse Claude OCR :", data);
+
 
   if (!data.content || !data.content[0] || !data.content[0].text) {
     throw new Error("OCR Claude : réponse invalide");
