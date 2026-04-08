@@ -749,6 +749,22 @@ return { texte: texteTotal, deviseGlobale };
 
 }
 async function extraireTextePDF(file) {
+
+  // Charger pdf.js si nécessaire
+  if (!window.pdfjsLib) {
+    await new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+      s.onload = resolve;
+      s.onerror = reject;
+      document.head.appendChild(s);
+    });
+
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+      'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  }
+
+  // Lecture du PDF
   const pdf = await pdfjsLib.getDocument(URL.createObjectURL(file)).promise;
   let texte = "";
 
@@ -760,6 +776,7 @@ async function extraireTextePDF(file) {
 
   return texte;
 }
+
 
   
 // ── OCR image via PaddleOCR (serveur Fly.io) ─────────────────────────────────
