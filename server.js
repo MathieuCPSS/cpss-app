@@ -291,6 +291,85 @@ app.get('/ping', (req, res) => res.send('pong'));
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
+function isComplexNatgraph(text) {
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+
+  for (const l of lines) {
+    if (/Serial\s*#/i.test(l)) return true;
+    if (/PACKING|FREIGHT/i.test(l) && l.split(/\s+/).length < 3) return true;
+    if (/\d+\s*x\s*\d+\s*x\s*\d+/i.test(l)) return true; // 152 x 152 x 18
+    if (/TBC/i.test(l)) return true;
+    if (l.split(/\s{2,}/).length < 3) return true; // structure cassée
+  }
+
+  return false;
+}
+app.post('/api/parse', requireAuth, async (req, res) => {
+  try {
+    const { texte, source } = req.body;
+
+    if (!texte || typeof texte !== 'string') {
+      return res.status(400).json({ error: 'Texte manquant' });
+    }
+
+    // 1) Détection complexité
+    const complexe = isComplexNatgraph(texte);
+
+    // 2) Si simple → parseur maison
+    if (!complexe) {
+      const parseur = require('./public/api'); // ton parseur existant
+      const articles = parseur.parse(texte, source);
+      return res.json({ mode: 'simple', articles });
+    }
+
+    // 3) Si complexe → Claude
+    const apiKey = process.env.CLAUDE_API_KEY;
+    if (!apiKey) {
+      return res.status(500).json({ error: 'Claude non configuré' });
+    }
+
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "claude-3-sonnet-20240229",
+        max_tokens: 2000,
+        temperature: 0,
+        messages: [
+          {
+            role: "user",
+            content: `Analyse ce devis et renvoie uniquement un JSON strict sous forme d'array d'articles :
+[
+  { "ref": "...", "designation": "...", "quantite": 1, "pu": 0, "remise": 0 }
+]
+Voici le texte :
+${texte}`
+          }
+        ]
+      })
+    });
+
+    const data = await response.json();
+
+    // Claude renvoie du texte → on parse
+    let articles = [];
+    try {
+      articles = JSON.parse(data.content[0].text);
+    } catch (err) {
+      return res.status(500).json({ error: 'Réponse Claude invalide', raw: data });
+    }
+
+    return res.json({ mode: 'claude', articles });
+
+  } catch (err) {
+    console.error('Erreur /api/parse :', err);
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // ── Démarrage ─────────────────────────────────────────────────────────
 connectDB().then(() => {
