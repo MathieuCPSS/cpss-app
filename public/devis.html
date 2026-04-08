@@ -743,49 +743,7 @@ async function analyserPDFviaServeur(file) {
 }
   
 // ── Extraction PDF via PDF.js (local, gratuit) ───────────────────────────────
-async function extrairePDF(base64data) {
-  if (!window.pdfjsLib) {
-    await new Promise((resolve, reject) => {
-      const s = document.createElement('script');
-      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
-      s.onload = resolve; s.onerror = reject;
-      document.head.appendChild(s);
-    });
-    window.pdfjsLib.GlobalWorkerOptions.workerSrc =
-      'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-  }
-  const binary = atob(base64data);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  const pdf = await window.pdfjsLib.getDocument({ data: bytes }).promise;
-  let texteTotal = '';
-  for (let p = 1; p <= pdf.numPages; p++) {
-    const page = await pdf.getPage(p);
-    const tc = await page.getTextContent();
-    const items = tc.items.map(it => ({
-      text: it.str, x: Math.round(it.transform[4]), y: Math.round(it.transform[5])
-    }));
-    items.sort((a, b) => b.y - a.y || a.x - b.x);
-    const lignes = [];
-    let ligneY = null, ligneCourante = [];
-    items.forEach(it => {
-      if (ligneY === null || Math.abs(it.y - ligneY) > 4) {
-        if (ligneCourante.length) lignes.push(ligneCourante);
-        ligneCourante = [it]; ligneY = it.y;
-      } else { ligneCourante.push(it); }
-    });
-    if (ligneCourante.length) lignes.push(ligneCourante);
-    texteTotal += lignes.map(l => l.map(i => i.text).join(String.fromCharCode(9))).join(String.fromCharCode(10)) + String.fromCharCode(10);
-  }
-  let deviseGlobale = null;
-if (/GBP/i.test(texteTotal)) {
-  deviseGlobale = 'GBP';
-}
 
-return { texte: texteTotal, deviseGlobale };
-
-
-}
 async function extraireTextePDF(file) {
 
   // Charger pdf.js si nécessaire
