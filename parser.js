@@ -100,17 +100,18 @@ function parseSakurai(text) {
   return items;
 }
 
+// ── Détection complexité Natgraph ─────────────────────────────────────
+// Complexe si : Serial #, désignation multi-lignes, ou multi-pages
+function isNatgraphComplex(texte) {
+  if (/Serial\s*#/i.test(texte)) return true;
+  if (/PAGE\s+1\s+of\s+[2-9]/i.test(texte)) return true;
+  if (/^\d{3}-\d{2}-\d{1,2}\s*$/m.test(texte)) return true;
+  return false;
+}
+
 // ── Détection du type de PDF ──────────────────────────────────────────
 function detectFormat(texte) {
-  if (
-    /Product\s+Code/i.test(texte) ||
-    /Total\s+GBP/i.test(texte)    ||
-    /\bDiscount\s*%/i.test(texte)  ||
-    /\bHandelsbanken\b/i.test(texte) ||
-    /\bEORI\b/i.test(texte)        ||
-    /\bA\/C CODE\b/i.test(texte)
-  ) return 'natgraph';
-
+  // Sakurai
   if (
     /Attach\b/i.test(texte)              ||
     /Checking Parts No\./i.test(texte)   ||
@@ -118,21 +119,32 @@ function detectFormat(texte) {
     /\bParts No\b.*\bParts Name\b/i.test(texte)
   ) return 'sakurai';
 
+  // Natgraph
+  if (
+    /Product\s+Code/i.test(texte)    ||
+    /Total\s+GBP/i.test(texte)       ||
+    /\bDiscount\s*%/i.test(texte)    ||
+    /\bHandelsbanken\b/i.test(texte) ||
+    /\bEORI\b/i.test(texte)          ||
+    /\bA\/C CODE\b/i.test(texte)
+  ) return isNatgraphComplex(texte) ? 'natgraph-complex' : 'natgraph-simple';
+
   return 'unknown';
 }
 
 // ── Point d'entrée principal ──────────────────────────────────────────
-// Retourne { format, articles, devise } ou null si non reconnu
+// Retourne { format, articles, devise } ou null si → Claude
 function parsePDF(texte) {
   const format = detectFormat(texte);
 
-  if (format === 'natgraph') {
-    return { format, articles: parseNatgraph(texte), devise: 'GBP' };
-  }
   if (format === 'sakurai') {
     return { format, articles: parseSakurai(texte), devise: 'EUR' };
   }
-  return null; // format inconnu → sera traité par Claude
+  if (format === 'natgraph-simple') {
+    return { format, articles: parseNatgraph(texte), devise: 'GBP' };
+  }
+  // natgraph-complex ou unknown → Claude
+  return null;
 }
 
-module.exports = { parsePDF, detectFormat, parseNatgraph, parseSakurai };
+module.exports = { parsePDF, detectFormat, parseNatgraph, parseSakurai, isNatgraphComplex };
