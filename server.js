@@ -319,6 +319,7 @@ async function ocrPDF(pdfBuffer) {
     headers: {
       "x-api-key": apiKey,
       "anthropic-version": "2023-10-01",
+      "anthropic-beta": "messages-2023-12-15",
       "content-type": "application/json"
     },
     body: JSON.stringify({
@@ -365,14 +366,15 @@ app.post('/api/parse-pdf', requireAuth, upload.single('pdf'), async (req, res) =
       return res.status(400).json({ error: 'Aucun fichier PDF reçu' });
     }
 
-    // 1) OCR local (Tesseract ou autre)
     const pdfBuffer = req.file.buffer;
+
+    // 1) OCR
     const texte = await ocrPDF(pdfBuffer);
 
-    // 2) Détection complexité
+    // 2) Complexité
     const complexe = isComplexPDF(texte);
 
-    // 3) Cas simple → parseur maison PDF
+    // 3) Cas simple → parseur maison
     if (!complexe) {
       const parseur = require('./public/api');
       const articles = parseur.parsePDF(texte);
@@ -381,15 +383,13 @@ app.post('/api/parse-pdf', requireAuth, upload.single('pdf'), async (req, res) =
 
     // 4) Cas complexe → Claude 3.5 Sonnet
     const apiKey = process.env.CLAUDE_API_KEY;
-    if (!apiKey) {
-      return res.status(500).json({ error: 'Claude non configuré' });
-    }
 
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
         "x-api-key": apiKey,
         "anthropic-version": "2023-10-01",
+        "anthropic-beta": "messages-2023-12-15",
         "content-type": "application/json"
       },
       body: JSON.stringify({
@@ -437,6 +437,7 @@ ${texte}`
     res.status(500).json({ error: err.message });
   }
 });
+
 
 // ── Démarrage ─────────────────────────────────────────────────────────
 connectDB().then(() => {
