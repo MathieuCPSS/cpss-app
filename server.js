@@ -312,7 +312,7 @@ async function ocrPDF(pdfBuffer) {
   const apiKey = process.env.CLAUDE_API_KEY;
   if (!apiKey) throw new Error("CLAUDE_API_KEY manquant");
 
-  const base64 = pdfBuffer.toString('base64');
+  const base64 = pdfBuffer.toString("base64");
 
   const response = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
@@ -322,9 +322,8 @@ async function ocrPDF(pdfBuffer) {
       "content-type": "application/json"
     },
     body: JSON.stringify({
-      model: "claude-3-5-sonnet-latest",   // 🔥 modèle correct
+      model: "claude-3-5-sonnet-latest",
       max_tokens: 4000,
-      temperature: 0,
       messages: [
         {
           role: "user",
@@ -360,10 +359,6 @@ Rends uniquement le texte brut, avec les sauts de ligne.`
   return data.content[0].text;
 }
 
-
-
-
-
 app.post('/api/parse-pdf', requireAuth, upload.single('pdf'), async (req, res) => {
   try {
     if (!req.file) {
@@ -372,19 +367,19 @@ app.post('/api/parse-pdf', requireAuth, upload.single('pdf'), async (req, res) =
 
     // 1) OCR local (Tesseract ou autre)
     const pdfBuffer = req.file.buffer;
-    const texte = await ocrPDF(pdfBuffer); // tu me diras si tu veux que je te génère cette fonction
+    const texte = await ocrPDF(pdfBuffer);
 
     // 2) Détection complexité
     const complexe = isComplexPDF(texte);
 
     // 3) Cas simple → parseur maison PDF
     if (!complexe) {
-      const parseur = require('./public/api'); // ton parseur existant
+      const parseur = require('./public/api');
       const articles = parseur.parsePDF(texte);
       return res.json({ mode: 'simple', articles });
     }
 
-    // 4) Cas complexe → Claude
+    // 4) Cas complexe → Claude 3.5 Sonnet
     const apiKey = process.env.CLAUDE_API_KEY;
     if (!apiKey) {
       return res.status(500).json({ error: 'Claude non configuré' });
@@ -404,24 +399,35 @@ app.post('/api/parse-pdf', requireAuth, upload.single('pdf'), async (req, res) =
         messages: [
           {
             role: "user",
-            content: `Analyse ce devis PDF et renvoie uniquement un JSON strict :
+            content: [
+              {
+                type: "text",
+                text: `Analyse ce devis PDF et renvoie uniquement un JSON strict :
 [
   { "ref": "...", "designation": "...", "quantite": 1, "pu": 0, "remise": 0 }
 ]
+
 Voici le texte OCR :
 ${texte}`
+              }
+            ]
           }
         ]
       })
     });
 
     const data = await response.json();
+    console.log("Réponse Claude analyse :", data);
+
+    if (!data.content || !data.content[0] || !data.content[0].text) {
+      return res.status(500).json({ error: 'Réponse Claude invalide', raw: data });
+    }
 
     let articles = [];
     try {
       articles = JSON.parse(data.content[0].text);
     } catch (err) {
-      return res.status(500).json({ error: 'Réponse Claude invalide', raw: data });
+      return res.status(500).json({ error: 'JSON Claude invalide', raw: data });
     }
 
     return res.json({ mode: 'claude', articles });
@@ -431,7 +437,6 @@ ${texte}`
     res.status(500).json({ error: err.message });
   }
 });
-
 
 // ── Démarrage ─────────────────────────────────────────────────────────
 connectDB().then(() => {
