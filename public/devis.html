@@ -686,22 +686,37 @@ async function analyserPDFviaServeur(file) {
   const form = new FormData();
   form.append('pdf', file);
 
-const res = await fetch('/api/parse-pdf', {
+  const res = await fetch('/api/parse-pdf', {
     method: 'POST',
     body: form,
-    credentials: 'include'   // 🔥 indispensable sur Render
-});
-
+    credentials: 'include'
+  });
 
   const data = await res.json();
+
+  console.log("Réponse serveur :", data);
 
   if (data.error) {
     showError(data.error);
     return;
   }
 
-  convertirEtAfficher(data.articles, 'EUR', 1);
+  // ✔ Cas Claude : { articles: [...], devise: "EUR" }
+  if (data.articles) {
+    return convertirEtAfficher(data.articles, data.devise || 'EUR', 1);
+  }
+
+  // ✔ Cas extraction brute PDF.js : { texte, deviseGlobale }
+  if (data.texte) {
+    const resultat = parserTexte(data.texte);
+    if (resultat.articles) {
+      return convertirEtAfficher(resultat.articles, resultat.devise, 1);
+    }
+  }
+
+  showError("Réponse serveur invalide");
 }
+
 
   
 // ── Extraction PDF via PDF.js (local, gratuit) ───────────────────────────────
