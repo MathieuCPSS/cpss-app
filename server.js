@@ -360,38 +360,25 @@ N'inclus pas les lignes de total, sous-total, frais de port ou TVA.`
 // ── Route principale ──────────────────────────────────────────────────
 app.post('/api/parse-pdf', requireAuth, upload.single('pdf'), async (req, res) => {
   try {
-    if (!req.file) return res.status(400).json({ error: 'Aucun fichier PDF reçu' });
- 
+    if (!req.file) {
+      return res.status(400).json({ error: 'Aucun fichier PDF reçu' });
+    }
+
     const buffer = req.file.buffer;
- 
-    // 1) Extraction texte locale (gratuite, aucun appel API)
-    let texte;
-    try {
-      texte = await extractPDFText(buffer);
-    } catch (err) {
-      console.warn('pdf-parse échoué, bascule sur Claude :', err.message);
-      texte = null;
-    }
- 
-    // 2) Si le texte est lisible, tenter le parseur local
-    if (texte && texte.trim().length > 5) {
-      const result = parsePDF(texte);
-      if (result) {
-        // Format reconnu (Natgraph ou Sakurai) → réponse gratuite
-        return res.json({ mode: result.format, articles: result.articles, devise: result.devise });
-      }
-    }
- 
-    // 3) Format inconnu ou PDF scanné → Claude (payant, seulement si nécessaire)
-    console.log('Format non reconnu — appel Claude');
+
+    // 🔥 Ici : Claude analyse TOUJOURS
+    // (uniquement utilisé pour Natgraph complexe ou fallback)
+    console.log("Analyse Claude forcée (complexe ou fallback)");
     const articles = await analyserAvecClaude(buffer);
+
     return res.json({ mode: 'claude', articles });
- 
+
   } catch (err) {
     console.error('Erreur /api/parse-pdf :', err);
     res.status(500).json({ error: err.message });
   }
 });
+
  
  
 // ── Démarrage ─────────────────────────────────────────────────────────
