@@ -653,36 +653,34 @@ async function analyser() {
   showError('');
   const activeTab = document.querySelector('.tab.active').textContent.trim();
 
-  if (activeTab.includes('Saisie')) {
-    analyserManuel();
-    return;
-  }
-
-  if (activeTab.includes('Coller')) {
-    const texte = document.getElementById('pasteArea').value.trim();
-    if (!texte) { 
-      showError('Veuillez coller du contenu à analyser.'); 
-      return; 
-    }
-
-    // 👉 Ici on utilise TON parseur, pas l’IA
-    const resultat = parserTexte(texte);
-    afficherResultats(resultat.articles, resultat.devise);
-    return;
-  }
-
-  if (activeTab.includes('PDF')) {
-    // 🔥 On vérifie le vrai fichier PDF, pas fileData
+if (activeTab.includes('PDF')) {
     if (!pdfFile) { 
       showError('Veuillez sélectionner un fichier PDF.'); 
       return; 
     }
 
-    // 🔥 On envoie le vrai fichier PDF au serveur
-    analyserPDFviaServeur(pdfFile);
+    // 1) Extraire le texte du PDF via PDF.js
+    const texte = await extraireTextePDF(pdfFile);
+
+    // 2) Analyse locale du texte
+    const resultat = parserTexte(texte);
+
+    // 3) Natgraph complexe → Claude
+    if (resultat && resultat.mode === "natgraph-complex") {
+        console.log("Natgraph complexe → envoi au serveur");
+        return analyserPDFviaServeur(pdfFile);  // STOP ici
+    }
+
+    // 4) Natgraph simple ou Sakurai → local
+    if (resultat && resultat.articles) {
+        return afficherResultats(resultat.articles, resultat.devise);
+    }
+
+    // 5) Fallback générique
+    showError("Format inconnu");
     return;
-  }
 }
+
 
 async function analyserPDFviaServeur(file) {
   const form = new FormData();
