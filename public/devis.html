@@ -647,39 +647,63 @@ ajouterLigneManuelle();
 
 // ── Analyse principale ────────────────────────────────────────────────────────
 async function analyser() {
-  await loadConfig(); // s'assure que les taux sont chargés
+  await loadConfig();
   updateTauxInfoMarge();
-
   showError('');
+
   const activeTab = document.querySelector('.tab.active').textContent.trim();
 
-if (activeTab.includes('PDF')) {
-    if (!pdfFile) { 
-      showError('Veuillez sélectionner un fichier PDF.'); 
-      return; 
+  // --- Saisie ---------------------------------------------------------
+  if (activeTab.includes('Saisie')) {
+    analyserManuel();
+    return;
+  }
+
+  // --- Coller ---------------------------------------------------------
+  if (activeTab.includes('Coller')) {
+    const texte = document.getElementById('pasteArea').value.trim();
+    if (!texte) {
+      showError("Veuillez coller du texte.");
+      return;
     }
 
-    // 1) Extraire le texte du PDF via PDF.js
-    const texte = await extraireTextePDF(pdfFile);
-
-    // 2) Analyse locale du texte
     const resultat = parserTexte(texte);
 
-    // 3) Natgraph complexe → Claude
-    if (resultat && resultat.mode === "natgraph-complex") {
-        console.log("Natgraph complexe → envoi au serveur");
-        return analyserPDFviaServeur(pdfFile);  // STOP ici
-    }
-
-    // 4) Natgraph simple ou Sakurai → local
     if (resultat && resultat.articles) {
-        return afficherResultats(resultat.articles, resultat.devise);
+      afficherResultats(resultat.articles, resultat.devise);
+      return;
     }
 
-    // 5) Fallback générique
-    showError("Format inconnu");
+    showError("Format inconnu.");
     return;
-}
+  }
+
+  // --- PDF ------------------------------------------------------------
+  if (activeTab.includes('PDF')) {
+    if (!pdfFile) {
+      showError("Veuillez sélectionner un fichier PDF.");
+      return;
+    }
+
+    const texte = await extraireTextePDF(pdfFile);
+    const resultat = parserTexte(texte);
+
+    // Natgraph complexe → Claude
+    if (resultat && resultat.mode === "natgraph-complex") {
+      console.log("Natgraph complexe → serveur");
+      await analyserPDFviaServeur(pdfFile);
+      return;
+    }
+
+    // Tous les cas locaux : sakurai, natgraph-simple, fallback
+    if (resultat && resultat.articles) {
+      afficherResultats(resultat.articles, resultat.devise);
+      return;
+    }
+
+    showError("Format PDF inconnu.");
+    return;
+  }
 }
 
 async function analyserPDFviaServeur(file) {
@@ -693,7 +717,6 @@ async function analyserPDFviaServeur(file) {
   });
 
   const data = await res.json();
-
   console.log("Réponse serveur :", data);
 
   if (data.error) {
@@ -701,23 +724,23 @@ async function analyserPDFviaServeur(file) {
     return;
   }
 
-  // ✔ Cas Claude : { articles: [...], devise: "EUR" }
-  if (data.articles) {
-    return convertirEtAfficher(data.articles, data.devise || 'EUR', 1);
+  // Cas Claude : { articles: [...], devise }
+  if (data.articles && Array.isArray(data.articles)) {
+    afficherResultats(data.articles, data.devise || "EUR");
+    return;
   }
 
-  // ✔ Cas extraction brute PDF.js : { texte, deviseGlobale }
+  // Cas extraction brute renvoyée par le serveur
   if (data.texte) {
     const resultat = parserTexte(data.texte);
-    if (resultat.articles) {
-      return convertirEtAfficher(resultat.articles, resultat.devise, 1);
+    if (resultat && resultat.articles) {
+      afficherResultats(resultat.articles, resultat.devise || "EUR");
+      return;
     }
   }
 
-  showError("Réponse serveur invalide");
+  showError("Réponse serveur invalide.");
 }
-
-
   
 // ── Extraction PDF via PDF.js (local, gratuit) ───────────────────────────────
 async function extrairePDF(base64data) {
