@@ -374,7 +374,7 @@ app.post('/api/parse-pdf', requireAuth, upload.single('pdf'), async (req, res) =
     }
  
     // 2) Si le texte est lisible, tenter le parseur local
-    if (texte && texte.trim().length > 50) {
+    if (texte && texte.trim().length > 5) {
       const result = parsePDF(texte);
       if (result) {
         // Format reconnu (Natgraph ou Sakurai) → réponse gratuite
