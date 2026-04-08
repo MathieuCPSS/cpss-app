@@ -1192,14 +1192,21 @@ function afficherResultats(articles, devise, taux) {
 
   let totalAchat = 0, totalVente = 0;
 
-  articles.forEach((art, i) => {
-    const prix = parseFloat(art.prix) || 0;
-    const quantite = parseFloat(art.quantite) || 1;
-    const remise = parseFloat(art.remise) || 0;
-    const coeff = getCoeff(prix);
-    const prixVente = prix * coeff;
-    totalAchat += prix;
-    totalVente += prixVente;
+const puAchat = parseFloat(art.puConverti || art.pu) || 0;
+const quantite = parseFloat(art.quantite) || 1;
+const remise = parseFloat(art.remise) || 0;
+
+const coeff = getCoeff(puAchat);
+
+// 🔥 Nouveau : PU vente = PU achat × coeff
+const puVente = puAchat * coeff;
+
+// 🔥 Nouveau : Prix vente = PU vente × quantité
+const prixVente = puVente * quantite;
+
+totalAchat += puAchat * quantite;   // total achat reste cohérent
+totalVente += prixVente;
+
 
     const origInfo = art.deviseOriginale
       ? `<br><span style="font-size:10px;color:var(--text-muted);">${art.prixOriginal?.toFixed(2)} ${art.deviseOriginale}</span>`
