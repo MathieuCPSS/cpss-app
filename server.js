@@ -318,33 +318,20 @@ async function ocrPDF(pdfBuffer) {
     method: "POST",
     headers: {
       "x-api-key": apiKey,
-      "anthropic-version": "2023-10-01",
-      "anthropic-beta": "messages-2023-12-15",
+      "anthropic-version": "2023-06-01",
       "content-type": "application/json"
     },
     body: JSON.stringify({
-      model: "claude-3-5-sonnet-latest",
+      model: "claude-3-sonnet-20240229",
       max_tokens: 4000,
       messages: [
         {
           role: "user",
-          content: [
-            {
-              type: "document",
-              source: {
-                type: "base64",
-                media_type: "application/pdf",
-                data: base64
-              }
-            },
-            {
-              type: "text",
-              text: `Tu es un OCR spécialisé devis industriels.
-Extrait TOUT le texte du PDF, dans l'ordre naturel, sans interprétation.
-Ne reformate rien. Ne corrige rien. Ne regroupe rien.
-Rends uniquement le texte brut, avec les sauts de ligne.`
-            }
-          ]
+          content: `Voici un PDF encodé en base64.\n\n` +
+                   `Ta tâche : faire de l'OCR texte brut.\n` +
+                   `Ne reformate rien, ne corrige rien.\n` +
+                   `Rends uniquement le texte brut.\n\n` +
+                   `PDF (base64) :\n${base64}`
         }
       ]
     })
@@ -359,6 +346,7 @@ Rends uniquement le texte brut, avec les sauts de ligne.`
 
   return data.content[0].text;
 }
+
 
 app.post('/api/parse-pdf', requireAuth, upload.single('pdf'), async (req, res) => {
   try {
@@ -388,8 +376,7 @@ app.post('/api/parse-pdf', requireAuth, upload.single('pdf'), async (req, res) =
       method: "POST",
       headers: {
         "x-api-key": apiKey,
-        "anthropic-version": "2023-10-01",
-        "anthropic-beta": "messages-2023-12-15",
+        "anthropic-version": "2023-06-01",
         "content-type": "application/json"
       },
       body: JSON.stringify({
