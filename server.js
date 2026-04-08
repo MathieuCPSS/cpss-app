@@ -308,6 +308,53 @@ function isComplexPDF(text) {
 
   return false;
 }
+async function ocrPDF(pdfBuffer) {
+  const apiKey = process.env.CLAUDE_API_KEY;
+  if (!apiKey) throw new Error("CLAUDE_API_KEY manquant");
+
+  const base64 = pdfBuffer.toString('base64');
+
+  const response = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+      "content-type": "application/json"
+    },
+    body: JSON.stringify({
+      model: "claude-3-sonnet-20240229",
+      max_tokens: 4000,
+      temperature: 0,
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "input_file",
+              media_type: "application/pdf",
+              data: base64
+            },
+            {
+              type: "text",
+              text: `Tu es un OCR spécialisé devis industriels.
+Extrait TOUT le texte du PDF, dans l'ordre naturel, sans interprétation.
+Ne reformate rien. Ne corrige rien. Ne regroupe rien.
+Rends uniquement le texte brut, avec les sauts de ligne.`
+            }
+          ]
+        }
+      ]
+    })
+  });
+
+  const data = await response.json();
+
+  if (!data.content || !data.content[0] || !data.content[0].text) {
+    throw new Error("OCR Claude : réponse invalide");
+  }
+
+  return data.content[0].text;
+}
 
 app.post('/api/parse-pdf', requireAuth, upload.single('pdf'), async (req, res) => {
   try {
