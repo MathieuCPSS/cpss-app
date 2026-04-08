@@ -685,10 +685,12 @@ async function analyserPDFviaServeur(file) {
   const form = new FormData();
   form.append('pdf', file);
 
-  const res = await fetch('/api/parse-pdf', {
+const res = await fetch('/api/parse-pdf', {
     method: 'POST',
-    body: form
-  });
+    body: form,
+    credentials: 'include'   // 🔥 indispensable sur Render
+});
+
 
   const data = await res.json();
 
