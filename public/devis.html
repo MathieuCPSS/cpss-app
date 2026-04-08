@@ -595,6 +595,7 @@ function coeffLabel(c) {
 // ── Fichier ───────────────────────────────────────────────────────────────────
 let fileData = null;
 let fileType = null;
+let articlesData = [];
 
 function handleFile(file) {
   if (!file) return;
@@ -620,6 +621,8 @@ function handleFile(file) {
   drop.style.background = 'rgba(109,191,138,0.05)';
 }
 
+
+let manualCount = 0;
 
 function ajouterLigneManuelle() {
   const id = manualCount++;
@@ -1200,8 +1203,6 @@ async function convertirEtAfficher(articles, deviseDetectee, deviseChoix) {
 }
 
 // ── Affichage résultats ───────────────────────────────────────────────────────
-let articlesData = [];
-
 function afficherResultats(articles, devise, taux) {
   articlesData = articles;
   const tbody = document.getElementById('tableBody');
