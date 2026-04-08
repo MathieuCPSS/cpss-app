@@ -1203,8 +1203,7 @@ function afficherResultats(articles, devise, taux) {
     // --- Données de base ---
     const puAchat = parseFloat(art.puConverti || art.pu) || 0;
     const quantite = parseFloat(art.quantite) || 1;
-    const remise = parseFloat(art.remise) || 0;
-
+    
     // --- Coeff ---
     const coeff = getCoeff(puAchat);
 
@@ -1234,11 +1233,6 @@ function afficherResultats(articles, devise, taux) {
       <!-- PU vente HT (nouvelle colonne) -->
       <td class="prix" style="text-align:right;">
         ${puVente.toFixed(2)} €
-      </td>
-
-      <!-- Remise -->
-      <td class="prix" style="text-align:right;">
-        ${remise > 0 ? remise + '%' : '—'}
       </td>
 
       <!-- Coeff -->
