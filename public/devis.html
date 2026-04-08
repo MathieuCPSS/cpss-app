@@ -1059,61 +1059,49 @@ if (isSakurai) {
   return { articles, devise };
 }
 
+async function analyserPDFviaServeur(file) {
 
-async function analyserViaIA(mode, texte) {
-  showLoader(mode === 'texte' ? 'Analyse du texte...' : 'Extraction du PDF...');
-  try {
-    let texteBrut = texte;
-     let deviseGlobale = null;
-    if (mode === 'fichier') {
-      if (fileType === 'application/pdf') {
-        const result = await extrairePDF(fileData);
-        texteBrut = result.texte;
-        deviseGlobale = result.deviseGlobale;
-      } else {
-        // Image → OCR avec Tesseract.js
-        showLoader('OCR en cours... (quelques secondes)');
-        texteBrut = await extraireImage(fileData, fileType);
-      }
-    }
+  // 1) Extraire texte avec PDF.js
+  const base64 = await fileToBase64(file);
+  const { texte, deviseGlobale } = await extrairePDF(base64);
 
-        // 🔥🔥🔥 LOG RAW LINES — C’EST ICI 🔥🔥🔥
-    console.log("=== TEXTE OCR PDF ===");
-    console.log(
-      texteBrut
-        .split("\n")
-        .map(l => "RAW LINE: " + JSON.stringify(l))
-        .join("\n")
-    );
-    console.log("=== FIN TEXTE OCR ===");
+  // 2) Détection Natgraph simple
+  const isNatgraphSimple =
+      /Product\s+Code/i.test(texte) ||
+      /\bDiscount\s*%/i.test(texte) ||
+      /\bHandelsbanken\b/i.test(texte);
 
-
-
-    hideLoader();
-    const { articles, devise } = parserTexte(texteBrut, deviseGlobale);
-    if (articles.length === 0) {
-      // Afficher le texte brut extrait pour aider au diagnostic
-      showError('Aucun article détecté. Texte brut extrait (copiez-le dans l\'onglet "Coller") :');
-      let debugZone = document.getElementById('debugZone');
-      if (!debugZone) {
-        debugZone = document.createElement('textarea');
-        debugZone.id = 'debugZone';
-        debugZone.style.cssText = 'width:100%;height:180px;margin-top:10px;background:var(--bg);color:var(--text);border:1px solid var(--border);font-family:monospace;font-size:11px;padding:8px;border-radius:4px;';
-        document.getElementById('errorMsg').after(debugZone);
-      }
-      debugZone.style.display = 'block';
-      debugZone.value = texteBrut;
+  if (isNatgraphSimple) {
+      console.log("Natgraph simple → parseur local");
+      const result = parserTexte(texte, deviseGlobale);
+      afficherResultats(result.articles, result.devise);
       return;
-    }
-    const dbg = document.getElementById('debugZone');
-    if (dbg) dbg.style.display = 'none';
-    const deviseSelectVal = document.getElementById('deviseSelect').value;
-    await convertirEtAfficher(articles, devise, deviseSelectVal);
-  } catch (err) {
-    hideLoader();
-    showError('Erreur : ' + err.message);
   }
+
+  // 3) Sinon → Claude
+  console.log("Natgraph complexe → Claude");
+  const form = new FormData();
+  form.append('pdf', file);
+
+  const res = await fetch('/api/parse-pdf', {
+      method: 'POST',
+      body: form,
+      credentials: 'include'
+  });
+
+  const data = await res.json();
+  convertirEtAfficher(data.articles, 'EUR', 1);
 }
+
+  function fileToBase64(file) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.readAsDataURL(file);
+  });
+}
+
+
 
 
 function analyserManuel() {
