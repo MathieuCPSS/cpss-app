@@ -301,7 +301,7 @@ async function extractPDFText(buffer) {
   const data = await pdfParse(buffer);
   return data.text;
 }
- 
+
 // ── Analyse PDF complexe via Claude (document natif) ──────────────────
 async function analyserAvecClaude(pdfBuffer) {
   const apiKey = process.env.CLAUDE_API_KEY;
@@ -366,11 +366,21 @@ app.post('/api/parse-pdf', requireAuth, upload.single('pdf'), async (req, res) =
 
     const buffer = req.file.buffer;
 
-    // 🔥 Ici : Claude analyse TOUJOURS
-    // (uniquement utilisé pour Natgraph complexe ou fallback)
-    console.log("Analyse Claude forcée (complexe ou fallback)");
-    const articles = await analyserAvecClaude(buffer);
+    // 1) Essayer d'abord le parseur local (Sakurai + Natgraph simple) — gratuit
+    try {
+      const texte = await extractPDFText(buffer);
+      const resultat = parsePDF(texte);
+      if (resultat) {
+        console.log(`Parseur local utilisé : ${resultat.format}`);
+        return res.json({ mode: resultat.format, articles: resultat.articles, devise: resultat.devise });
+      }
+    } catch (parseErr) {
+      console.warn('Extraction texte locale échouée, passage à Claude :', parseErr.message);
+    }
 
+    // 2) Natgraph complexe ou format inconnu → Claude
+    console.log('Analyse Claude (natgraph-complex ou format inconnu)');
+    const articles = await analyserAvecClaude(buffer);
     return res.json({ mode: 'claude', articles });
 
   } catch (err) {
