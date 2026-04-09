@@ -279,7 +279,7 @@ app.get('/api/config', requireAuth, (req, res) => {
     },
  
     taux: {
-      GBP: parseFloat(process.env.TAUX_GBP || '1'),
+      GBP: parseFloat(process.env.TAUX_GBP || '1.25'),
       USD: parseFloat(process.env.TAUX_USD || '1'),
       CHF: parseFloat(process.env.TAUX_CHF || '1'),
     }
