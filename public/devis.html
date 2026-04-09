@@ -728,7 +728,8 @@ async function analyserPDFviaServeur(file) {
 
   // Cas Claude : { articles: [...], devise }
   if (data.articles && Array.isArray(data.articles)) {
-    afficherResultats(data.articles, data.devise || "EUR");
+    const deviseChoix = document.getElementById('deviseSelect').value;
+    await convertirEtAfficher(data.articles, data.devise || "EUR", deviseChoix);
     return;
   }
 
@@ -736,7 +737,8 @@ async function analyserPDFviaServeur(file) {
   if (data.texte) {
     const resultat = parserTexte(data.texte);
     if (resultat && resultat.articles) {
-      afficherResultats(resultat.articles, resultat.devise || "EUR");
+      const deviseChoix = document.getElementById('deviseSelect').value;
+      await convertirEtAfficher(resultat.articles, resultat.devise || "EUR", deviseChoix);
       return;
     }
   }
@@ -770,7 +772,6 @@ async function extraireTextePDF(file) {
     const page = await pdf.getPage(p);
     const content = await page.getTextContent();
 
-    // Grouper les items par ligne (même y, tolérance ±3px)
     const lignes = [];
     for (const item of content.items) {
       if (!item.str.trim()) continue;
@@ -780,18 +781,16 @@ async function extraireTextePDF(file) {
       ligne.items.push({ x: item.transform[4], str: item.str });
     }
 
-    // Trier les lignes par y décroissant (haut → bas), items par x croissant
     lignes.sort((a, b) => b.y - a.y);
 
     for (const ligne of lignes) {
       ligne.items.sort((a, b) => a.x - b.x);
-      // Insérer des espaces proportionnels aux écarts x pour simuler les colonnes
       let row = '';
       let prevX = null, prevLen = 0;
       for (const item of ligne.items) {
         if (prevX !== null) {
-          const gap = item.x - prevX - prevLen * 6; // ~6px par caractère
-          row += gap > 20 ? '    ' : ' ';           // 4 espaces si large gap
+          const gap = item.x - prevX - prevLen * 6;
+          row += gap > 20 ? '    ' : ' ';
         }
         row += item.str;
         prevX = item.x;
@@ -946,7 +945,6 @@ function parserTexte(texte, deviseGlobale) {
 
 
 
-
   function fileToBase64(file) {
   return new Promise((resolve) => {
     const reader = new FileReader();
@@ -980,7 +978,6 @@ function analyserManuel() {
 // Taux chargés depuis /api/config (voir loadConfig)
 function getTauxFallback(devise) {
   if (_config && _config.taux && _config.taux[devise]) return _config.taux[devise];
-  // Taux fixes de repli si TAUX_xxx non défini dans les variables Render
   const TAUX_DEFAUT = { GBP: 1.25, USD: 1, CHF: 1 };
   return TAUX_DEFAUT[devise] || 1;
 }
