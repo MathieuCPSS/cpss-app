@@ -153,6 +153,7 @@ function parsePDF(texte) {
 
 // Rendre les fonctions accessibles au front
 if (typeof window !== 'undefined') {
+    window.parseNombre = parseNombre;
     window.detectFormat = detectFormat;
     window.parseNatgraph = parseNatgraph;
     window.parseSakurai = parseSakurai;
