@@ -178,9 +178,18 @@
   /* Print rules */
   @media print {
     @page { size: A4; margin: 20mm 10mm; }
-    body { background: white; padding: 0; font-size: 12pt; }
-    .a4-page { box-shadow: none; margin: 0; padding: 20mm 12mm; box-sizing: border-box; }
-    input, textarea, #descriptif { border: none; background: none; font-size: 12pt; }
+    body { padding: 0; font-size: 12pt; background: white !important; color: black !important; }
+    .a4-page { box-shadow: none; margin: 0; padding: 20mm 12mm; box-sizing: border-box; background: white !important; }
+    table, th, td { background: white !important; color: black !important; border-color: #333 !important; }
+    input, textarea, select, #descriptif {
+      border: 1px solid #999 !important;
+      font-size: 12pt;
+      background: white !important;
+      color: black !important;
+      -webkit-appearance: none !important;
+      appearance: none !important;
+      -webkit-text-fill-color: black !important;
+    }
     .no-print, #signatureModal, #modalCanvas, .modal, .modal-content { display: none !important; }
     #signatureCanvas { border: none !important; }
   }
@@ -240,6 +249,7 @@
       background-color: #505050 !important;
   }
 }
+@media screen {
   body {
       background: #1e1e1e;
       color: #e0e0e0;
@@ -280,6 +290,7 @@
   th, td {
       border: 1px solid #444;
   }
+}
 
 </style>
   
@@ -630,9 +641,19 @@ if (dateSignatureInput && dateSignatureInput.value) {
 document.querySelectorAll('input, textarea').forEach(el => {
   el.style.border = 'none';
 });
-document.querySelectorAll('input[type="time"]').forEach(el => {
-  el.style.backgroundColor = '#fff';
-});
+
+// Force thème blanc pour l'export PDF via une balise <style> temporaire
+const pdfStyleTag = document.createElement('style');
+pdfStyleTag.id = 'pdf-export-style';
+pdfStyleTag.textContent = `
+  .a4-page, .a4-page * {
+    background-color: white !important;
+    color: black !important;
+    border-color: #aaa !important;
+  }
+`;
+document.head.appendChild(pdfStyleTag);
+const a4pages = document.querySelectorAll('.a4-page');
   function renderNextPage() {
     html2canvas(pages[index], {
       scale: 2,
@@ -651,11 +672,12 @@ document.querySelectorAll('input[type="time"]').forEach(el => {
         renderNextPage();
       } else {
         pdf.save("rapport.pdf");
-        document.querySelectorAll('input[type="time"]').forEach(el => {
-  el.style.backgroundColor = '';
-});
+
+        // Restaurer le thème sombre : supprimer la balise style temporaire
+        const pdfStyle = document.getElementById('pdf-export-style');
+        if (pdfStyle) pdfStyle.remove();
         document.querySelectorAll('input, textarea').forEach(el => {
-  el.style.border = ''; // ou remets ta classe CSS si tu en avais une
+  el.style.border = '';
 });
              if (dateSignatureInput) {
   dateSignatureInput.value = originalSignatureDate;
@@ -1700,3 +1722,4 @@ async function ouvrirFichierJSON() {
         const file = await fileHandle.getFile();
         const text = await file.text();
         const data = JSON.pars
+
