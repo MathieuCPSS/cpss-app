@@ -184,9 +184,18 @@ const CPSS = (function() {
           showStatus('✅ Rapport sauvegardé', '#2e7d32');
           return true;
         }
-      } catch {}
+        if (r.status === 401) {
+          showStatus('⚠️ Session expirée — veuillez vous reconnecter', '#c62828');
+          setTimeout(() => { window.location.href = '/'; }, 3000);
+          return false;
+        }
+        showStatus('⚠️ Erreur serveur (' + r.status + ') — sauvegarde locale', '#e65100');
+      } catch (e) {
+        showStatus('💾 Rapport sauvegardé localement (hors-ligne)', '#e65100');
+      }
+    } else {
+      showStatus('💾 Rapport sauvegardé localement (hors-ligne)', '#e65100');
     }
-    showStatus('💾 Rapport sauvegardé localement (hors-ligne)', '#e65100');
     return false;
   }
 
