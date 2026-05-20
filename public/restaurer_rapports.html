@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Restauration rapports CPSS</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #1e1e1e; color: #e0e0e0; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
+    h2 { color: #90caf9; margin-bottom: 8px; }
+    p { color: #aaa; margin-bottom: 30px; text-align: center; }
+    button { padding: 16px 40px; font-size: 16pt; background: #2e7d32; color: white; border: none; border-radius: 8px; cursor: pointer; }
+    button:hover { background: #388e3c; }
+    #status { margin-top: 24px; font-size: 14pt; font-weight: bold; text-align: center; }
+  </style>
+</head>
+<body>
+  <h2>Restauration rapports CPSS</h2>
+  <p>Ouvre cette page sur la tablette et appuie sur le bouton.<br>Les deux rapports Visiance S20 et S21 2026 seront restaurés dans le localStorage.</p>
+  <button onclick="restaurer()">🔄 Restaurer les rapports</button>
+  <div id="status"></div>
+
+  <script>
+    const rapports = {
+      "rapportCPSS_Visiance_S20_2026": {
+        "_id": "Visiance_S20_2026",
+        "install": true,
+        "depannage": false,
+        "entretien": false,
+        "visite": false,
+        "societe": "Visiance",
+        "adresse": "Z.I. des Loges, Rue de l'Industrie, 42340 Veauche",
+        "contactName": "Monsieur Martin",
+        "lignes": [
+          {"date":"2026-05-11","trajet":"06:00","debut":"13:30","pause":"","fin":"18:00","km":"560","repas":"1","hotel":"1"},
+          {"date":"2026-05-12","trajet":"","debut":"08:00","pause":"","fin":"18:00","km":"","repas":"1","hotel":"1"},
+          {"date":"2026-05-13","trajet":"","debut":"08:00","pause":"","fin":"18:00","km":"","repas":"1","hotel":"1"},
+          {"date":"2026-05-14","trajet":"06:00","debut":"","pause":"","fin":"","km":"560","repas":"","hotel":""},
+          {"date":"","trajet":"","debut":"","pause":"","fin":"","km":"","repas":"","hotel":""},
+          {"date":"","trajet":"","debut":"","pause":"","fin":"","km":"","repas":"","hotel":""},
+          {"date":"","trajet":"","debut":"","pause":"","fin":"","km":"","repas":"","hotel":""}
+        ],
+        "total-trajet": "12h 0min",
+        "total-temps": "24h 30min",
+        "total-km": "1120",
+        "total-repas": "3",
+        "total-hotel": "3",
+        "piecesChanged": "",
+        "piecesToChange": "",
+        "date-signature": "",
+        "descriptif": "Sakurai MS102AX (réhaussée) S/N : RE122226<div>- Mise en place et de niveau</div><div>- Connexions mécaniques et électriques</div><div>- Raccordements élec et pneumatiques faites par le client.</div><div>- Quelques tests succints le mercredi aprem</div><div><br></div><div>Tunnel + stacker + chiller Imprint S/N : 260116 + 260108</div><div>- Mise en place et de niveau</div><div>- Connexions mécaniques et électriques </div><div>- Raccordements élec et pneumatiques faites par le client</div><div><br></div>",
+        "_save_client": "Visiance",
+        "_save_semaine": "20",
+        "_save_annee": "2026",
+        "signature": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAABkCAYAAAA8AQ3AAAAAAXNSR0IArs4c6QAAAvRJREFUeF7t1AEJAAAMAsHZv/RyPNwSyDncOQIECEQEFskpJgECBM5geQICBDICBitTlaAECBgsP0CAQEbAYGWqEpQAAYPlBwgQyAgYrExVghIgYLD8AAECGQGDlalKUAIEDJYfIEAgI2CwMlUJSoCAwfIDBAhkBAxWpipBCRAwWH6AAIGMgMHKVCUoAQIGyw8QIJARMFiZqgQlQMBg+QECBDICBitTlaAECBgsP0CAQEbAYGWqEpQAAYPlBwgQyAgYrExVghIgYLD8AAECGQGDlalKUAIEDJYfIEAgI2CwMlUJSoCAwfIDBAhkBAxWpipBCRAwWH6AAIGMgMHKVCUoAQIGyw8QIJARMFiZqgQlQMBg+QECBDICBitTlaAECBgsP0CAQEbAYGWqEpQAAYPlBwgQyAgYrExVghIgYLD8AAECGQGDlalKUAIEDJYfIEAgI2CwMlUJSoCAwfIDBAhkBAxWpipBCRAwWH6AAIGMgMHKVCUoAQIGyw8QIJARMFiZqgQlQMBg+QECBDICBitTlaAECBgsP0CAQEbAYGWqEpQAAYPlBwgQyAgYrExVghIgYLD8AAECGQGDlalKUAIEDJYfIEAgI2CwMlUJSoCAwfIDBAhkBAxWpipBCRAwWH6AAIGMgMHKVCUoAQIGyw8QIJARMFiZqgQlQMBg+QECBDICBitTlaAECBgsP0CAQEbAYGWqEpQAAYPlBwgQyAgYrExVghIgYLD8AAECGQGDlalKUAIEDJYfIEAgI2CwMlUJSoCAwfIDBAhkBAxWpipBCRAwWH6AAIGMgMHKVCUoAQIGyw8QIJARMFiZqgQlQMBg+QECBDICBitTlaAECBgsP0CAQEbAYGWqEpQAAYPlBwgQyAgYrExVghIgYLD8AAECGQGDlalKUAIEDJYfIEAgI2CwMlUJSoCAwfIDBAhkBAxWpipBCRAwWH6AAIGMgMHKVCUoAQIGyw8QIJARMFiZqgQlQMBg+QECBDICBitTlaAECDxmQABlNwQbOQAAAABJRU5ErkJggg==",
+        "_heuresTerrain": {},
+        "_heuresTrajet": {},
+        "_joursTerrain": {},
+        "_joursTrajet": {}
+      },
+      "rapportCPSS_Visiance_S21_2026": {
+        "_id": "Visiance_S21_2026",
+        "install": true,
+        "depannage": false,
+        "entretien": false,
+        "visite": false,
+        "societe": "Visiance",
+        "adresse": "Z.I. des Loges, Rue de l'Industrie, 42340 Veauche",
+        "contactName": "Monsieur Martin",
+        "lignes": [
+          {"date":"2026-05-17","trajet":"06:00","debut":"","pause":"","fin":"","km":"560","repas":"1","hotel":"1"},
+          {"date":"2026-05-18","trajet":"","debut":"08:00","pause":"","fin":"18:00","km":"","repas":"1","hotel":"1"},
+          {"date":"2026-05-19","trajet":"","debut":"08:00","pause":"","fin":"18:00","km":"","repas":"1","hotel":"1"},
+          {"date":"2026-05-20","trajet":"04:00","debut":"08:00","pause":"","fin":"14:00","km":"370","repas":"","hotel":""},
+          {"date":"","trajet":"","debut":"","pause":"","fin":"","km":"","repas":"","hotel":""},
+          {"date":"","trajet":"","debut":"","pause":"","fin":"","km":"","repas":"","hotel":""},
+          {"date":"","trajet":"","debut":"","pause":"","fin":"","km":"","repas":"","hotel":""}
+        ],
+        "total-trajet": "10h 0min",
+        "total-temps": "26h 0min",
+        "total-km": "930",
+        "total-repas": "3",
+        "total-hotel": "3",
+        "piecesChanged": "",
+        "piecesToChange": "",
+        "date-signature": "2026-05-20",
+        "descriptif": "Sakurai MS102AX (rehaussée) S/N : RE122226<div>- fin d'installation</div><div><br></div><div>Tunnel + stacker + chiller Imprint S/N : 260116 +260108</div><div>- fin d'installation</div><div><br></div><div>Essais en prod + formation</div><div><br></div><div>NB : faire un rapport à Imprint, quartz trop courts on en a rajouté des bouts que le client avait en stock, glissière pour mettre les quartz tordues à l'extrémité (côté commande) ce qui mets les quartzs sous pression. Pas mal de traces de rouille. Le LQbelt compense bien en left, mais en right malgrè la présence du signal sur I2.6 pendant plusieurs secondes (réglage 8 secondes ?), Q2.4 n'est jamais active sur le PLC. Cablage dryer error (OK) cablage stacker error (OK en provisoire) changement du contact sur le relais stacker NC-NO l'A.U et la cellule de bourrage servent pour arreter la sakurai (voir pour rajouter un vrai bouton lors de mon prochain passage) garder le cablage de la cellule de bourrage et connecter les A.U stacker directement sur le tunnel + ajout d'un relais de sécurité pour contrôle apave.</div>",
+        "_save_client": "Visiance",
+        "_save_semaine": "21",
+        "_save_annee": "2026",
+        "signature": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAABkCAYAAAA8AQ3AAAAAAXNSR0IArs4c6QAAAvRJREFUeF7t1AEJAAAMAsHZv/RyPNwSyDncOQIECEQEFskpJgECBM5geQICBDICBitTlaAECBgsP0CAQEbAYGWqEpQAAYPlBwgQyAgYrExVghIgYLD8AAECGQGDlalKUAIEDJYfIEAgI2CwMlUJSoCAwfIDBAhkBAxWpipBCRAwWH6AAIGMgMHKVCUoAQIGyw8QIJARMFiZqgQlQMBg+QECBDICBitTlaAECBgsP0CAQEbAYGWqEpQAAYPlBwgQyAgYrExVghIgYLD8AAECGQGDlalKUAIEDJYfIEAgI2CwMlUJSoCAwfIDBAhkBAxWpipBCRAwWH6AAIGMgMHKVCUoAQIGyw8QIJARMFiZqgQlQMBg+QECBDICBitTlaAECBgsP0CAQEbAYGWqEpQAAYPlBwgQyAgYrExVghIgYLD8AAECGQGDlalKUAIEDJYfIEAgI2CwMlUJSoCAwfIDBAhkBAxWpipBCRAwWH6AAIGMgMHKVCUoAQIGyw8QIJARMFiZqgQlQMBg+QECBDICBitTlaAECBgsP0CAQEbAYGWqEpQAAYPlBwgQyAgYrExVghIgYLD8AAECGQGDlalKUAIEDJYfIEAgI2CwMlUJSoCAwfIDBAhkBAxWpipBCRAwWH6AAIGMgMHKVCUoAQIGyw8QIJARMFiZqgQlQMBg+QECBDICBitTlaAECBgsP0CAQEbAYGWqEpQAAYPlBwgQyAgYrExVghIgYLD8AAECGQGDlalKUAIEDJYfIEAgI2CwMlUJSoCAwfIDBAhkBAxWpipBCRAwWH6AAIGMgMHKVCUoAQIGyw8QIJARMFiZqgQlQMBg+QECBDICBitTlaAECBgsP0CAQEbAYGWqEpQAAYPlBwgQyAgYrExVghIgYLD8AAECGQGDlalKUAIEDJYfIEAgI2CwMlUJSoCAwfIDBAhkBAxWpipBCRAwWH6AAIGMgMHKVCUoAQIGyw8QIJARMFiZqgQlQMBg+QECBDICBitTlaAECDxmQABlNwQbOQAAAABJRU5ErkJggg==",
+        "_heuresTerrain": {},
+        "_heuresTrajet": {},
+        "_joursTerrain": {},
+        "_joursTrajet": {}
+      }
+    };
+
+    function restaurer() {
+      try {
+        for (const [key, value] of Object.entries(rapports)) {
+          localStorage.setItem(key, JSON.stringify(value));
+        }
+        document.getElementById('status').innerHTML = '✅ Rapports S20 et S21 restaurés avec succès !<br><small style="color:#aaa">Tu peux fermer cette page et recharger l\'appli.</small>';
+        document.getElementById('status').style.color = '#81c784';
+      } catch(e) {
+        document.getElementById('status').textContent = '❌ Erreur : ' + e.message;
+        document.getElementById('status').style.color = '#e57373';
+      }
+    }
+  </script>
+</body>
+</html>
