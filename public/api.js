@@ -96,19 +96,63 @@ const CPSS = (function() {
   }
 
   // ── Rapports ──────────────────────────────────────────────────────
+  // ── Rapports non synchronisés (sauvegardés hors-ligne) ────────────
+  // Clé volontairement SANS le préfixe "rapportCPSS_" pour ne pas être listée comme un rapport
+  const DIRTY_KEY = 'cpssRapportsNonSynchro';
+
+  function getDirty() {
+    try { return JSON.parse(localStorage.getItem(DIRTY_KEY) || '{}'); } catch { return {}; }
+  }
+  function markDirty(key) {
+    const d = getDirty(); d[key] = Date.now();
+    localStorage.setItem(DIRTY_KEY, JSON.stringify(d));
+  }
+  function clearDirty(key) {
+    const d = getDirty(); delete d[key];
+    localStorage.setItem(DIRTY_KEY, JSON.stringify(d));
+  }
+
+  // Renvoie au serveur les rapports sauvegardés localement pendant une coupure
+  async function syncDirty() {
+    const keys = Object.keys(getDirty());
+    let pushed = 0;
+    for (const key of keys) {
+      const local = localStorage.getItem('rapportCPSS_' + key);
+      if (!local) { clearDirty(key); continue; }
+      try {
+        const r = await fetch('/api/rapports/' + encodeURIComponent(key), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: local,
+          credentials: 'include'
+        });
+        if (r.ok) { clearDirty(key); pushed++; }
+        else if (r.status === 401) break;
+      } catch { break; }
+    }
+    if (pushed > 0) showStatus('✅ ' + pushed + ' rapport(s) local(aux) synchronisé(s)', '#2e7d32');
+    return pushed;
+  }
+
   async function loadRapports() {
     await checkOnline();
     if (_online) {
+      await syncDirty();               // d'abord pousser ce qui a été fait hors-ligne
       try {
         const r = await fetch('/api/rapports', { credentials: 'include' });
         if (r.ok) {
           const data = await r.json();
+          const dirty = getDirty();
           if (Object.keys(data).length > 0) {
             Object.keys(data).forEach(k => {
+              if (dirty[k]) return;    // ne jamais écraser une version locale non synchronisée
               localStorage.setItem('rapportCPSS_' + k, JSON.stringify(data[k]));
             });
+            // liste = serveur + rapports locaux pas encore envoyés
+            const keys = new Set(Object.keys(data));
+            Object.keys(dirty).forEach(k => keys.add(k));
             showStatus('✅ Rapports synchronisés', '#2e7d32');
-            return Object.keys(data).map(k => ({ key: k, label: nomAffichage(k) }));
+            return Array.from(keys).map(k => ({ key: k, label: nomAffichage(k) }));
           }
           showStatus('⚠️ Serveur vide — données locales', '#e65100');
         }
@@ -131,16 +175,20 @@ const CPSS = (function() {
   async function loadRapport(key) {
     await checkOnline();
     if (_online) {
-      try {
-        const r = await fetch('/api/rapports/' + encodeURIComponent(key), {
-          credentials: 'include'
-        });
-        if (r.ok) {
-          const data = await r.json();
-          localStorage.setItem('rapportCPSS_' + key, JSON.stringify(data));
-          return data;
-        }
-      } catch {}
+      if (getDirty()[key]) await syncDirty();
+      // Si la version locale n'a toujours pas pu partir, elle reste prioritaire sur le serveur
+      if (!getDirty()[key]) {
+        try {
+          const r = await fetch('/api/rapports/' + encodeURIComponent(key), {
+            credentials: 'include'
+          });
+          if (r.ok) {
+            const data = await r.json();
+            localStorage.setItem('rapportCPSS_' + key, JSON.stringify(data));
+            return data;
+          }
+        } catch {}
+      }
     }
     const local = localStorage.getItem('rapportCPSS_' + key);
     return local ? JSON.parse(local) : null;
@@ -170,6 +218,7 @@ const CPSS = (function() {
     });
 
     localStorage.setItem('rapportCPSS_' + key, JSON.stringify(data));
+    markDirty(key);   // considéré non synchronisé tant que le serveur n'a pas confirmé
 
     await checkOnline();
     if (_online) {
@@ -181,6 +230,7 @@ const CPSS = (function() {
           credentials: 'include'
         });
         if (r.ok) {
+          clearDirty(key);
           showStatus('✅ Rapport sauvegardé', '#2e7d32');
           return true;
         }
@@ -201,6 +251,7 @@ const CPSS = (function() {
 
   async function deleteRapport(key) {
     localStorage.removeItem('rapportCPSS_' + key);
+    clearDirty(key);
     await checkOnline();
     if (_online) {
       try {
@@ -222,6 +273,6 @@ const CPSS = (function() {
     fetch('/ping', { cache: 'no-store' }).catch(() => {});
   }, 10 * 60 * 1000);
 
-  return { loadStock, saveStock, loadRapports, loadRapport, saveRapport, deleteRapport, getRole, requireAuth, nomAffichage, checkOnline };
+  return { loadStock, saveStock, loadRapports, loadRapport, saveRapport, deleteRapport, syncDirty, getRole, requireAuth, nomAffichage, checkOnline };
 
 })();
